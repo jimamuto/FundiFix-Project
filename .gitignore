@@ -1,0 +1,4 @@
+# Ignore the Composer vendor folder
+vendor/
+# Ignore the secret credentials file
+.env
