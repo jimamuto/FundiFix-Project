@@ -10,6 +10,18 @@ class User {
         $this->conn = $db;
     }
 
+
+    
+    public function findByEmail(string $email) {
+        $query = "SELECT * FROM {$this->table_name} WHERE email = ? LIMIT 1";
+        $stmt  = $this->conn->prepare($query);
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        return ($result->num_rows === 1) ? $result->fetch_assoc() : false;
+    }
+
        public function createUser(string $name, string $email, string $password, string $role): bool {
     
         $query = "INSERT INTO {$this->table_name} (name, email, password, role)
