@@ -1,0 +1,70 @@
+<?php
+// This view requires the header file to be included at the top.
+require_once 'layouts/header.php';
+?>
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-lg border-0">
+                <div class="card-body p-4 p-md-5">
+                    
+                    <!-- Section 1: Clear Header with Icon -->
+                    <!-- This gives the user immediate context for the page's purpose. -->
+                    <div class="text-center mb-4">
+                        <i class="bi bi-person-plus-fill fs-1 text-primary"></i>
+                        <h3 class="card-title mt-3">Create Your Account</h3>
+                    </div>
+
+                    <?php
+                    // Display any error or info message with a corresponding icon.
+                    if (!empty($message)) {
+                        echo '<div class="alert alert-danger d-flex align-items-center"><i class="bi bi-exclamation-triangle-fill me-2"></i>' . $message . '</div>';
+                    }
+                    ?>
+
+                    <!-- The form submits its data to the router with the 'register' action. -->
+                    <form action="?action=register" method="POST">
+                        
+                        
+                        <div class="form-floating mb-3">
+                            <input type="text" class="form-control" id="name" name="name" placeholder="John Doe" required>
+                            <label for="name">Full Name</label>
+                        </div>
+
+                        <div class="form-floating mb-3">
+                            <input type="email" class="form-control" id="email" name="email" placeholder="name@example.com" required>
+                            <label for="email">Email address</label>
+                        </div>
+
+                        <div class="form-floating mb-3">
+                            <input type="password" class="form-control" id="password" name="password" placeholder="Password" required>
+                            <label for="password">Password</label>
+                        </div>
+
+                        <!-- Role Selection Dropdown -->
+                        <div class="mb-3">
+                            <label for="role" class="form-label">I am a...</label>
+                            <select class="form-select" id="role" name="role" required>
+                                <option value="" disabled selected>-- Select your role --</option>
+                                <option value="resident">Resident (Looking for a service)</option>
+                                <option value="fundi">Fundi (Offering a service)</option>
+                            </select>
+                        </div>
+                        
+                       
+                        <button type="submit" class="btn btn-primary w-100 btn-lg">Create Account</button>
+                    </form>
+                </div>
+            </div>
+            <div class="text-center mt-3">
+                <p class="text-muted">Already have an account? <a href="?action=login">Login here</a></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<?php
+// This view requires the footer file to be included at the bottom.
+require_once 'layouts/footer.php';
+?>
