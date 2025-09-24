@@ -1,5 +1,5 @@
 <?php
-// We start by including the header, which should now have the Bootstrap Icons link.
+
 require_once 'layouts/header.php';
 ?>
 
@@ -7,9 +7,9 @@ require_once 'layouts/header.php';
 <div class="container-fluid px-0">
     <div class="bg-dark text-white text-center py-5">
         <div class="container py-5">
-            <!-- Increased the heading size for more impact. -->
+         
             <h1 class="display-4 fw-bold">Reliable Artisans, Right at Your Doorstep</h1>
-            <!-- Added 'lead' class for a softer, more elegant paragraph style. -->
+           
             <p class="lead col-lg-8 mx-auto mb-4">
                 Find, book, and review the best local fundis in Nairobi. Quick, safe, and hassle-free.
             </p>
