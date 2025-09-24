@@ -33,6 +33,19 @@ class User {
     
     }
 
+
+    public function createUserHashed(string $name, string $email, string $password, string $role): bool {
+        // --- Commit 5 code starts here ---
+        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+        $query = "INSERT INTO {$this->table_name} (name, email, password, role)
+                  VALUES (?, ?, ?, ?)";
+        $stmt  = $this->conn->prepare($query);
+        $stmt->bind_param("ssss", $name, $email, $hashed_password, $role);
+        return $stmt->execute();
+        
+    }
+
+
 }
 
     ?>
