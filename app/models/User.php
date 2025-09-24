@@ -46,6 +46,18 @@ class User {
     }
 
 
+    
+     
+    
+    public function register(string $name, string $email, string $password, string $role): bool {
+        if ($this->emailExists($email)) {
+            return false;
+        }
+        
+        return $this->createUserHashed($name, $email, $password, $role);
+    }
+
+
 }
 
     ?>
