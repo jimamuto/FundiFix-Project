@@ -57,6 +57,12 @@ class User {
         return $this->createUserHashed($name, $email, $password, $role);
     }
 
+   
+    public function emailExists(string $email): bool {
+        return $this->findByEmail($email) ? true : false;
+    }
+
+
 
 }
 
