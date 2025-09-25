@@ -1,8 +1,6 @@
 <?php
 
 class User {
-
-    // Database connection details
     private $conn;
     private $table_name = "users";
 
@@ -10,60 +8,46 @@ class User {
         $this->conn = $db;
     }
 
+    public function findById($id) {
+        $query = "SELECT id, name, email, role, password FROM " . $this->table_name . " WHERE id = ? LIMIT 1";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        return $result->fetch_assoc();
+    }
 
-    
-    public function findByEmail(string $email) {
-        $query = "SELECT * FROM {$this->table_name} WHERE email = ? LIMIT 1";
-        $stmt  = $this->conn->prepare($query);
+    public function findByEmail($email) {
+        $query = "SELECT * FROM " . $this->table_name . " WHERE email = ? LIMIT 1";
+        $stmt = $this->conn->prepare($query);
         $stmt->bind_param("s", $email);
         $stmt->execute();
         $result = $stmt->get_result();
-
-        return ($result->num_rows === 1) ? $result->fetch_assoc() : false;
+        return $result->fetch_assoc();
     }
 
-       public function createUser(string $name, string $email, string $password, string $role): bool {
-    
-        $query = "INSERT INTO {$this->table_name} (name, email, password, role)
-                  VALUES (?, ?, ?, ?)";
-        $stmt  = $this->conn->prepare($query);
-        
-        $stmt->bind_param("ssss", $name, $email, $password, $role);
-        return $stmt->execute();
-    
-    }
-
-
-    public function createUserHashed(string $name, string $email, string $password, string $role): bool {
-        // --- Commit 5 code starts here ---
-        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-        $query = "INSERT INTO {$this->table_name} (name, email, password, role)
-                  VALUES (?, ?, ?, ?)";
-        $stmt  = $this->conn->prepare($query);
-        $stmt->bind_param("ssss", $name, $email, $hashed_password, $role);
-        return $stmt->execute();
-        
-    }
-
-
-    
-     
-    
-    public function register(string $name, string $email, string $password, string $role): bool {
-        if ($this->emailExists($email)) {
+    public function register($name, $email, $password, $role) {
+        if ($this->findByEmail($email)) {
             return false;
         }
-        
-        return $this->createUserHashed($name, $email, $password, $role);
+        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+        $query = "INSERT INTO " . $this->table_name . " (name, email, password, role) VALUES (?, ?, ?, ?)";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bind_param("ssss", $name, $email, $hashed_password, $role);
+        return $stmt->execute();
     }
 
-   
-    public function emailExists(string $email): bool {
-        return $this->findByEmail($email) ? true : false;
+    public function update($id, $name, $email) {
+        $query = "UPDATE " . $this->table_name . " SET name = ?, email = ? WHERE id = ?";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bind_param("ssi", $name, $email, $id);
+        return $stmt->execute();
     }
 
-
-
+    public function updatePassword($id, $new_password) {
+        $query = "UPDATE " . $this->table_name . " SET password = ? WHERE id = ?";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bind_param("si", $new_password, $id);
+        return $stmt->execute();
+    }
 }
-
-    ?>
