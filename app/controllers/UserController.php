@@ -82,6 +82,61 @@ class UserController {
         require_once dirname(_DIR_) . '/views/login.php';
     }
 
+    public function dashboard() {
+        if (!isset($_SESSION['user_id'])) {
+            header("Location: ?action=login");
+            exit();
+        }
+        $user = $this->user->findById($_SESSION['user_id']);
+        require_once dirname(_DIR_) . '/views/dashboard.php';
+    }
+
+    public function profile() {
+        if (!isset($_SESSION['user_id'])) {
+            header("Location: ?action=login");
+            exit();
+        }
+
+        $user_data = $this->user->findById($_SESSION['user_id']);
+        if (!$user_data) {
+            $_SESSION['message'] = "User not found.";
+            header("Location: ?action=dashboard");
+            exit();
+        }
+
+        require_once dirname(_DIR_) . '/views/profile.php';
+    }
+
+    public function editProfile() {
+        if (!isset($_SESSION['user_id'])) {
+            header("Location: ?action=login");
+            exit();
+        }
+        $user = $this->user->findById($_SESSION['user_id']);
+        require_once dirname(_DIR_) . '/views/edit-profile.php';
+    }
+
+    public function updateProfile() {
+        if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_SESSION['user_id'])) {
+            $name = htmlspecialchars(strip_tags($_POST['name']));
+            $email = htmlspecialchars(strip_tags($_POST['email']));
+            $id = $_SESSION['user_id'];
+
+            if ($this->user->update($id, $name, $email)) {
+                $_SESSION['message'] = "Profile updated successfully!";
+                header("Location: ?action=dashboard");
+                exit();
+            } else {
+                $message = "Failed to update profile. Please try again.";
+                $user = $this->user->findById($id);
+                require_once dirname(_DIR_) . '/views/edit-profile.php';
+            }
+        } else {
+            header("Location: ?action=dashboard");
+            exit();
+        }
+    }
+
     private function send2FACode($email, $code) {
         $mail = new PHPMailer(true);
         try {
