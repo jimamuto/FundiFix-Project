@@ -43,19 +43,68 @@ class UserController {
 
     public function login() {
         $message = '';
+        $show_2fa_form = false;
+
         if (isset($_POST['login'])) {
             $email = htmlspecialchars(strip_tags($_POST['email']));
             $password = $_POST['password'];
             $found_user = $this->user->findByEmail($email);
 
             if ($found_user && password_verify($password, $found_user['password'])) {
-                $_SESSION['user_id'] = $found_user['id'];
-                header("Location: ?action=dashboard");
-                exit();
+                $two_fa_code = rand(100000, 999999);
+                $_SESSION['2fa_user_id'] = $found_user['id'];
+                $_SESSION['2fa_code'] = $two_fa_code;
+
+                if ($this->send2FACode($found_user['email'], $two_fa_code)) {
+                    $message = "A verification code has been sent to your email.";
+                    $show_2fa_form = true;
+                } else {
+                    $message = "Could not send verification code. Please try again.";
+                }
             } else {
                 $message = "Invalid email or password.";
             }
         }
+
+        if (isset($_POST['verify_2fa'])) {
+            $submitted_code = $_POST['2fa_code'];
+            if (isset($_SESSION['2fa_code']) && $submitted_code == $_SESSION['2fa_code']) {
+                $_SESSION['user_id'] = $_SESSION['2fa_user_id'];
+                unset($_SESSION['2fa_user_id']);
+                unset($_SESSION['2fa_code']);
+                header("Location: ?action=dashboard");
+                exit();
+            } else {
+                $message = "Invalid verification code. Please try again.";
+                $show_2fa_form = true;
+            }
+        }
         require_once dirname(_DIR_) . '/views/login.php';
+    }
+
+    private function send2FACode($email, $code) {
+        $mail = new PHPMailer(true);
+        try {
+            $mail->isSMTP();
+            $mail->Host       = $_ENV['MAIL_HOST'];
+            $mail->SMTPAuth   = true;
+            $mail->Username   = $_ENV['MAIL_USER'];
+            $mail->Password   = $_ENV['MAIL_PASS'];
+            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+            $mail->Port       = 587;
+
+            $mail->setFrom($_ENV['MAIL_USER'], $_ENV['MAIL_FROM_NAME']);
+            $mail->addAddress($email);
+
+            $mail->isHTML(true);
+            $mail->Subject = 'Your Fundi-Fix Verification Code';
+            $mail->Body    = 'Your verification code is: <b>' . $code . '</b>';
+            $mail->AltBody = 'Your verification code is: ' . $code;
+
+            $mail->send();
+            return true;
+        } catch (Exception $e) {
+            return false;
+        }
     }
 }
