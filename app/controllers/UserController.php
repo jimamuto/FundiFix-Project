@@ -137,6 +137,48 @@ class UserController {
         }
     }
 
+    public function showChangePasswordPage() {
+        if (!isset($_SESSION['user_id'])) {
+            header("Location: ?action=login");
+            exit();
+        }
+        require_once dirname(_DIR_) . '/views/change-password.php';
+    }
+
+    public function updatePassword() {
+        if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_SESSION['user_id'])) {
+            $current_password = $_POST['current_password'];
+            $new_password = $_POST['new_password'];
+            $confirm_password = $_POST['confirm_password'];
+            $user_id = $_SESSION['user_id'];
+            $current_user = $this->user->findById($user_id);
+
+            if (!$current_user || !password_verify($current_password, $current_user['password'])) {
+                $message = "Your current password is incorrect.";
+                require_once dirname(_DIR_) . '/views/change-password.php';
+                return;
+            }
+            if (strlen($new_password) < 8 || $new_password !== $confirm_password) {
+                $message = "New passwords do not match or are too short.";
+                require_once dirname(_DIR_) . '/views/change-password.php';
+                return;
+            }
+
+            $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
+            if ($this->user->updatePassword($user_id, $hashed_password)) {
+                $_SESSION['message'] = "Your password has been changed successfully.";
+                header("Location: ?action=dashboard");
+                exit();
+            } else {
+                $message = "An error occurred. Please try again.";
+                require_once dirname(_DIR_) . '/views/change-password.php';
+            }
+        } else {
+            header("Location: ?action=login");
+            exit();
+        }
+    }
+
     private function send2FACode($email, $code) {
         $mail = new PHPMailer(true);
         try {
