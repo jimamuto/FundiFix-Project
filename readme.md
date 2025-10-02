@@ -54,4 +54,14 @@ Composer.
 
 Clone the Repository:
 
-git clone [Your-GitHub-Repository-URL]
+git clone [https://github.com/jimamuto/FundiFix-Project.git]
+
+to do run migrations--- php migrations/migrations.php to create the tables 
+run seeders-----  php migrations/seeders.php to populate the tables 
+
+to test if your connection works 
+run this command php test_connection
+
+to test if the user has been registered
+run this command php test_user.php
+
