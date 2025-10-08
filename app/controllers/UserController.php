@@ -35,7 +35,7 @@ class UserController {
             if (empty($name) || empty($email) || empty($password) || empty($role)) {
                 $message = "Please fill in all fields.";
             } else {
-                if ($this->user->register($name, $email, $password, $role)) {
+                if ($this->user->registerUser($name, $email, $password, $role)) {
                     $_SESSION['message'] = "Registration successful! Please log in.";
                     header("Location: ?action=login");
                     exit();
@@ -54,35 +54,15 @@ class UserController {
         if (isset($_POST['login'])) {
             $email = htmlspecialchars(strip_tags($_POST['email']));
             $password = $_POST['password'];
-            $found_user = $this->user->findByEmail($email);
+            $user = $this->user->loginUser($email, $password);
 
-            if ($found_user && password_verify($password, $found_user['password'])) {
-                $two_fa_code = rand(100000, 999999);
-                $_SESSION['2fa_user_id'] = $found_user['id'];
-                $_SESSION['2fa_code'] = $two_fa_code;
-
-                if ($this->send2FACode($found_user['email'], $two_fa_code)) {
-                    $message = "A verification code has been sent to your email.";
-                    $show_2fa_form = true;
-                } else {
-                    $message = "Could not send verification code. Please try again.";
-                }
-            } else {
-                $message = "Invalid email or password.";
-            }
-        }
-
-        if (isset($_POST['verify_2fa'])) {
-            $submitted_code = $_POST['2fa_code'];
-            if (isset($_SESSION['2fa_code']) && $submitted_code == $_SESSION['2fa_code']) {
-                $_SESSION['user_id'] = $_SESSION['2fa_user_id'];
-                unset($_SESSION['2fa_user_id']);
-                unset($_SESSION['2fa_code']);
+            if ($user) {
+                // Optionally, you can keep 2FA here if needed, otherwise just log in
+                $_SESSION['user_id'] = $user['id'];
                 header("Location: ?action=dashboard");
                 exit();
             } else {
-                $message = "Invalid verification code. Please try again.";
-                $show_2fa_form = true;
+                $message = "Invalid email or password.";
             }
         }
         require_once dirname(_DIR_) . '/views/login.php';
