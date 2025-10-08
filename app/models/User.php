@@ -26,7 +26,7 @@ class User {
         return $result->fetch_assoc();
     }
 
-    public function register($name, $email, $password, $role) {
+    public function registerUser($name, $email, $password, $role) {
         if ($this->findByEmail($email)) {
             return false;
         }
@@ -35,6 +35,16 @@ class User {
         $stmt = $this->conn->prepare($query);
         $stmt->bind_param("ssss", $name, $email, $hashed_password, $role);
         return $stmt->execute();
+    }
+
+    public function loginUser($email, $password) {
+        $user = $this->findByEmail($email);
+        if ($user && password_verify($password, $user['password'])) {
+            // Remove password before returning user data
+            unset($user['password']);
+            return $user;
+        }
+        return false;
     }
 
     public function update($id, $name, $email) {
