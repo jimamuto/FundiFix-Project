@@ -35,9 +35,13 @@ class User {
         return $stmt->fetch() ?: null;
     }
 
+<<<<<<< HEAD
     // Register a new user
     public function register(string $name, string $email, string $password, string $role): bool {
         // Check if user already exists
+=======
+    public function register($name, $email, $password, $role) {
+>>>>>>> dd79510d031305bf458c6e7065881cd440d6e11f
         if ($this->findByEmail($email)) {
             return false; // already exists
         }
@@ -50,6 +54,16 @@ class User {
 
         $stmt = $this->conn->prepare($query);
         return $stmt->execute([$name, $email, $hashed_password, $role]);
+    }
+
+    public function loginUser($email, $password) {
+        $user = $this->findByEmail($email);
+        if ($user && password_verify($password, $user['password'])) {
+            // Remove password before returning user data
+            unset($user['password']);
+            return $user;
+        }
+        return false;
     }
 
     // Update user details
