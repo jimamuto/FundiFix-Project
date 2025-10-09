@@ -1,8 +1,11 @@
 <?php
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../vendor/autoload.php';
+
+use App\Config\Database;
 
 // Get PDO connection
-$conn = Database::getConnection();
+$db = new Database();
+$conn = $db->connect();
 
 try {
     echo "<h3> Seeding database...</h3>";

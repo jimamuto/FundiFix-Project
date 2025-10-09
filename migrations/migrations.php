@@ -1,8 +1,11 @@
 <?php
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../vendor/autoload.php';
+
+use App\Config\Database;
 
 // Get PDO connection
-$conn = Database::getConnection();
+$db = new Database();
+$conn = $db->connect();
 
 // Helper function to drop a table
 function dropTable($conn, $tableName) {
