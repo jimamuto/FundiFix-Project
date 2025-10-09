@@ -57,7 +57,6 @@ class UserController {
             $password = $_POST['password'];
             $user = $this->user->loginUser($email, $password);
 
-<<<<<<< HEAD
             if ($found_user && password_verify($password, $found_user['password'])) {
                 $two_fa_code = rand(100000, 999999);
                 $_SESSION['2fa_user_id'] = $found_user['id'];
@@ -79,11 +78,6 @@ class UserController {
             if (isset($_SESSION['2fa_code']) && $submitted_code == $_SESSION['2fa_code']) {
                 $_SESSION['user_id'] = $_SESSION['2fa_user_id'];
                 unset($_SESSION['2fa_user_id'], $_SESSION['2fa_code']);
-=======
-            if ($user) {
-                // Optionally, you can keep 2FA here if needed, otherwise just log in
-                $_SESSION['user_id'] = $user['id'];
->>>>>>> dd79510d031305bf458c6e7065881cd440d6e11f
                 header("Location: ?action=dashboard");
                 exit();
             } else {
