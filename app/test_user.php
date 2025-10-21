@@ -1,6 +1,6 @@
 <?php
 // Load Composer autoloader
-require __DIR__ . '/vendor/autoload.php';
+require _DIR_ . '/vendor/autoload.php';
 
 use App\Config\Database;
 
