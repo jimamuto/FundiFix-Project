@@ -6,6 +6,9 @@ use App\Models\User;
 use App\Config\Database;
 
 
+
+// For TOTP 2FA
+use OTPHP\TOTP;
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
@@ -32,14 +35,27 @@ class UserController {
             $email = htmlspecialchars(strip_tags($_POST['email']));
             $password = $_POST['password'];
             $role = htmlspecialchars(strip_tags($_POST['role']));
+            $enable_2fa = isset($_POST['enable_2fa']) ? 1 : 0;
+            $twofa_secret = null;
+            if ($enable_2fa) {
+                $totp = TOTP::create();
+                $twofa_secret = $totp->getSecret();
+            }
 
             if (empty($name) || empty($email) || empty($password) || empty($role)) {
                 $message = "Please fill in all fields.";
             } else {
-                if ($this->user->registerUser($name, $email, $password, $role)) {
-                    $_SESSION['message'] = "Registration successful! Please log in.";
-                    header("Location: ?action=login");
-                    exit();
+                if ($this->user->register($name, $email, $password, $role, $twofa_secret, $enable_2fa)) {
+                    if ($enable_2fa) {
+                        $_SESSION['2fa_setup_secret'] = $twofa_secret;
+                        $_SESSION['2fa_setup_email'] = $email;
+                        header("Location: ?action=setup2fa");
+                        exit();
+                    } else {
+                        $_SESSION['message'] = "Registration successful! Please log in.";
+                        header("Location: ?action=login");
+                        exit();
+                    }
                 } else {
                     $message = "Registration failed. Email may already be in use.";
                 }
@@ -48,25 +64,38 @@ class UserController {
         require_once __DIR__ . '/../views/register.php';
     }
 
+    // 2FA setup page (QR code)
+    public function setup2fa() {
+        if (!isset($_SESSION['2fa_setup_secret']) || !isset($_SESSION['2fa_setup_email'])) {
+            header("Location: ?action=register");
+            exit();
+        }
+        $secret = $_SESSION['2fa_setup_secret'];
+        $email = $_SESSION['2fa_setup_email'];
+        $totp = TOTP::create($secret);
+        $totp->setLabel($email);
+        $qrCodeUrl = $totp->getQrCodeUri();
+        require_once __DIR__ . '/../views/setup2fa.php';
+    }
+
     public function login() {
         $message = '';
         $show_2fa_form = false;
+        $user = null;
 
         if (isset($_POST['login'])) {
             $email = htmlspecialchars(strip_tags($_POST['email']));
             $password = $_POST['password'];
-            $user = $this->user->loginUser($email, $password);
+            $user = $this->user->findByEmail($email);
 
-            if ($found_user && password_verify($password, $found_user['password'])) {
-                $two_fa_code = rand(100000, 999999);
-                $_SESSION['2fa_user_id'] = $found_user['id'];
-                $_SESSION['2fa_code'] = $two_fa_code;
-
-                if ($this->send2FACode($found_user['email'], $two_fa_code)) {
-                    $message = "A verification code has been sent to your email.";
+            if ($user && password_verify($password, $user['password'])) {
+                if ($user['twofa_enabled'] && !empty($user['twofa_secret'])) {
+                    $_SESSION['2fa_user_id'] = $user['id'];
                     $show_2fa_form = true;
                 } else {
-                    $message = "Could not send verification code. Please try again.";
+                    $_SESSION['user_id'] = $user['id'];
+                    header("Location: ?action=dashboard");
+                    exit();
                 }
             } else {
                 $message = "Invalid email or password.";
@@ -74,14 +103,22 @@ class UserController {
         }
 
         if (isset($_POST['verify_2fa'])) {
-            $submitted_code = $_POST['2fa_code'];
-            if (isset($_SESSION['2fa_code']) && $submitted_code == $_SESSION['2fa_code']) {
-                $_SESSION['user_id'] = $_SESSION['2fa_user_id'];
-                unset($_SESSION['2fa_user_id'], $_SESSION['2fa_code']);
-                header("Location: ?action=dashboard");
-                exit();
+            $user_id = $_SESSION['2fa_user_id'] ?? null;
+            $code = $_POST['2fa_code'] ?? '';
+            if ($user_id && $code) {
+                $secret = $this->user->get2FASecret($user_id);
+                $totp = TOTP::create($secret);
+                if ($totp->verify($code)) {
+                    $_SESSION['user_id'] = $user_id;
+                    unset($_SESSION['2fa_user_id']);
+                    header("Location: ?action=dashboard");
+                    exit();
+                } else {
+                    $message = "Invalid 2FA code.";
+                    $show_2fa_form = true;
+                }
             } else {
-                $message = "Invalid email or password.";
+                $message = "Invalid 2FA attempt.";
             }
         }
 
@@ -183,30 +220,5 @@ class UserController {
     }
 
     // --- PRIVATE HELPER METHODS ---
-
-    private function send2FACode($email, $code): bool {
-        $mail = new PHPMailer(true);
-        try {
-            $mail->isSMTP();
-            $mail->Host       = $_ENV['MAIL_HOST'];
-            $mail->SMTPAuth   = true;
-            $mail->Username   = $_ENV['MAIL_USER'];
-            $mail->Password   = $_ENV['MAIL_PASS'];
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port       = 587;
-
-            $mail->setFrom($_ENV['MAIL_USER'], $_ENV['MAIL_FROM_NAME']);
-            $mail->addAddress($email);
-
-            $mail->isHTML(true);
-            $mail->Subject = 'Your Fundi-Fix Verification Code';
-            $mail->Body    = 'Your verification code is: <b>' . $code . '</b>';
-            $mail->AltBody = 'Your verification code is: ' . $code;
-
-            $mail->send();
-            return true;
-        } catch (Exception $e) {
-            return false;
-        }
-    }
+    // (No longer needed: send2FACode for email-based 2FA)
 }

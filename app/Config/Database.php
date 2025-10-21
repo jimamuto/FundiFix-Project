@@ -6,10 +6,10 @@ use PDOException;
 
 class Database {
     private $host = "localhost";
-    private $dbname = "fundi_database";
+    private $dbname = "fundi";
     private $username = "root";
-    private $password = "rootuser";
-    private $port = 3310; 
+    private $password = "japhaa";
+    private $port = 3306; 
     public $conn;
 
     public function connect() {

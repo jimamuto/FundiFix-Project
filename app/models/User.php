@@ -12,10 +12,11 @@ class User {
         $this->conn = $db; // $db must be a PDO instance from Database::getConnection()
     }
 
+
     // Find user by ID
     public function findById(int $id): ?array {
-        $query = "SELECT id, name, email, role, password 
-                  FROM {$this->table_name} 
+        $query = "SELECT id, name, email, role, password, twofa_secret, twofa_enabled
+                  FROM {$this->table_name}
                   WHERE id = ? LIMIT 1";
 
         $stmt = $this->conn->prepare($query);
@@ -35,8 +36,40 @@ class User {
         return $stmt->fetch() ?: null;
     }
 
+    // Set 2FA secret and enable 2FA
+    public function enable2FA(int $userId, string $secret): bool {
+        $query = "UPDATE {$this->table_name} SET twofa_secret = ?, twofa_enabled = 1 WHERE id = ?";
+        $stmt = $this->conn->prepare($query);
+        return $stmt->execute([$secret, $userId]);
+    }
+
+    // Disable 2FA
+    public function disable2FA(int $userId): bool {
+        $query = "UPDATE {$this->table_name} SET twofa_secret = NULL, twofa_enabled = 0 WHERE id = ?";
+        $stmt = $this->conn->prepare($query);
+        return $stmt->execute([$userId]);
+    }
+
+    // Get 2FA secret for user
+    public function get2FASecret(int $userId): ?string {
+        $query = "SELECT twofa_secret FROM {$this->table_name} WHERE id = ?";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute([$userId]);
+        $row = $stmt->fetch();
+        return $row ? $row['twofa_secret'] : null;
+    }
+
+    // Check if 2FA is enabled for user
+    public function is2FAEnabled(int $userId): bool {
+        $query = "SELECT twofa_enabled FROM {$this->table_name} WHERE id = ?";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute([$userId]);
+        $row = $stmt->fetch();
+        return $row && $row['twofa_enabled'] == 1;
+    }
+
     // Register a new user
-    public function register(string $name, string $email, string $password, string $role): bool {
+    public function register(string $name, string $email, string $password, string $role, $twofa_secret = null, $twofa_enabled = 0): bool {
         // Check if user already exists
         if ($this->findByEmail($email)) {
             return false; // already exists
@@ -45,11 +78,11 @@ class User {
         $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
         $query = "INSERT INTO {$this->table_name} 
-                  (name, email, password, role) 
-                  VALUES (?, ?, ?, ?)";
+                  (name, email, password, role, twofa_secret, twofa_enabled) 
+                  VALUES (?, ?, ?, ?, ?, ?)";
 
         $stmt = $this->conn->prepare($query);
-        return $stmt->execute([$name, $email, $hashed_password, $role]);
+        return $stmt->execute([$name, $email, $hashed_password, $role, $twofa_secret, $twofa_enabled]);
     }
 
     public function loginUser($email, $password) {
