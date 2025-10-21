@@ -15,20 +15,30 @@ require_once 'layouts/header.php';
                         <div class="text-center mb-4">
                             <i class="bi bi-shield-lock-fill fs-1 text-primary"></i>
                             <h3 class="card-title mt-3">Two-Factor Authentication</h3>
-                            <p class="text-muted">For your security, please enter the 6-digit code we sent to your email.</p>
+                            <p class="text-muted">Open your authenticator app and enter the 6-digit code.</p>
                         </div>
 
                         <?php if (!empty($message)): ?>
                             <div class="alert alert-info d-flex align-items-center"><i class="bi bi-info-circle-fill me-2"></i> <?php echo $message; ?></div>
                         <?php endif; ?>
 
-                        <form action="?action=login" method="POST">
+                        <form action="?action=login" method="POST" onsubmit="return validate2FACode();">
                             <div class="form-floating mb-3">
-                                <input type="text" class="form-control" id="2fa_code" name="2fa_code" placeholder="123456" required autofocus>
+                                <input type="text" class="form-control" id="2fa_code" name="2fa_code" placeholder="123456" required autofocus maxlength="6" pattern="\d{6}">
                                 <label for="2fa_code">Verification Code</label>
                             </div>
                             <button type="submit" name="verify_2fa" class="btn btn-primary w-100 btn-lg">Verify & Log In</button>
                         </form>
+                        <script>
+                        function validate2FACode() {
+                            var code = document.getElementById('2fa_code').value;
+                            if (!/^\d{6}$/.test(code)) {
+                                alert('Please enter a valid 6-digit code.');
+                                return false;
+                            }
+                            return true;
+                        }
+                        </script>
 
                     <?php else: ?>
 
