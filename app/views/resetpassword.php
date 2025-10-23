@@ -14,7 +14,7 @@
                         <div class="alert alert-danger"><?php echo $message; ?></div>
                     <?php endif; ?>
 
-                    <form action="?action=updatePasswordFromReset" method="POST">
+                    <form action="?action=updatePasswordFromReset" method="POST" onsubmit="return validatePasswords();">
                         <!-- Hidden input to carry the token -->
                         <input type="hidden" name="token" value="<?php echo htmlspecialchars($token); ?>">
 
@@ -29,6 +29,21 @@
                         </div>
                         <button type="submit" class="btn btn-primary w-100 btn-lg">Reset Password</button>
                     </form>
+                    <script>
+                    function validatePasswords() {
+                        var pw1 = document.getElementById('new_password').value;
+                        var pw2 = document.getElementById('confirm_password').value;
+                        if (pw1.length < 8) {
+                            alert('Password must be at least 8 characters long.');
+                            return false;
+                        }
+                        if (pw1 !== pw2) {
+                            alert('Passwords do not match.');
+                            return false;
+                        }
+                        return true;
+                    }
+                    </script>
                 </div>
             </div>
         </div>
