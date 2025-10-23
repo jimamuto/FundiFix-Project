@@ -21,7 +21,7 @@ class UserController {
     // --- CORE ROUTER METHODS ---
 
     public function home() {
-        require_once dirname(_DIR_) . '/views/home.php';
+        require_once dirname(__DIR__) . '/views/home.php';
     }
 
     public function register() {
@@ -44,7 +44,7 @@ class UserController {
                 }
             }
         }
-        require_once dirname(_DIR_) . '/views/register.php';
+        require_once dirname(__DIR__) . '/views/register.php';
     }
 
     public function login() {
@@ -85,7 +85,7 @@ class UserController {
                 $show_2fa_form = true;
             }
         }
-        require_once dirname(_DIR_) . '/views/login.php';
+        require_once dirname(__DIR__) . '/views/login.php';
     }
 
     public function dashboard() {
@@ -94,7 +94,7 @@ class UserController {
             exit();
         }
         $user = $this->user->findById($_SESSION['user_id']);
-        require_once dirname(_DIR_) . '/views/dashboard.php';
+        require_once dirname(__DIR__) . '/views/dashboard.php';
     }
 
     public function profile() {
@@ -110,7 +110,7 @@ class UserController {
             exit();
         }
 
-        require_once dirname(_DIR_) . '/views/profile.php';
+        require_once dirname(__DIR__) . '/views/profile.php';
     }
 
     public function editProfile() {
@@ -119,7 +119,7 @@ class UserController {
             exit();
         }
         $user = $this->user->findById($_SESSION['user_id']);
-        require_once dirname(_DIR_) . '/views/edit-profile.php';
+        require_once dirname(__DIR__) . '/views/edit-profile.php';
     }
 
     public function updateProfile() {
@@ -135,7 +135,7 @@ class UserController {
             } else {
                 $message = "Failed to update profile. Please try again.";
                 $user = $this->user->findById($id);
-                require_once dirname(_DIR_) . '/views/edit-profile.php';
+                require_once dirname(__DIR__) . '/views/edit-profile.php';
             }
         } else {
             header("Location: ?action=dashboard");
@@ -148,7 +148,7 @@ class UserController {
             header("Location: /FundiApp/public/?action=login");
             exit();
         }
-        require_once dirname(_DIR_) . '/views/change-password.php';
+        require_once dirname(__DIR__) . '/views/change-password.php';
     }
 
     public function updatePassword() {
@@ -161,12 +161,12 @@ class UserController {
 
             if (!$current_user || !password_verify($current_password, $current_user['password'])) {
                 $message = "Your current password is incorrect.";
-                require_once dirname(_DIR_) . '/views/change-password.php';
+                require_once dirname(__DIR__) . '/views/change-password.php';
                 return;
             }
             if (strlen($new_password) < 8 || $new_password !== $confirm_password) {
                 $message = "New passwords do not match or are too short.";
-                require_once dirname(_DIR_) . '/views/change-password.php';
+                require_once dirname(__DIR__) . '/views/change-password.php';
                 return;
             }
 
@@ -177,7 +177,7 @@ class UserController {
                 exit();
             } else {
                 $message = "An error occurred. Please try again.";
-                require_once dirname(_DIR_) . '/views/change-password.php';
+                require_once dirname(__DIR__) . '/views/change-password.php';
             }
         } else {
             header("Location: ?action=login");
@@ -195,7 +195,7 @@ class UserController {
     // --- FORGOT/RESET PASSWORD METHODS ---
 
     public function showForgotPasswordPage() {
-        require_once dirname(_DIR_) . '/views/forgot-password.php';
+        require_once dirname(__DIR__) . '/views/forgot-password.php';
     }
 
     public function sendResetLink() {
@@ -225,7 +225,7 @@ class UserController {
             exit();
         }
         
-        require_once dirname(_DIR_) . '/views/reset-password.php';
+        require_once dirname(__DIR__) . '/views/reset-password.php';
     }
     
     public function updatePasswordFromReset() {
@@ -242,7 +242,7 @@ class UserController {
 
             if (strlen($new_password) < 8 || $new_password !== $confirm_password) {
                 $message = "Passwords do not match or are too short. Please try again.";
-                require_once dirname(_DIR_) . '/views/reset-password.php';
+                require_once dirname(__DIR__) . '/views/reset-password.php';
                 return;
             }
 
