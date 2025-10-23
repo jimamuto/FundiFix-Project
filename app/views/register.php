@@ -24,7 +24,7 @@ require_once 'layouts/header.php';
                     ?>
 
                     <!-- The form submits its data to the router with the 'register' action. -->
-                    <form action="?action=register" method="POST">
+                    <form action="?action=register" method="POST" onsubmit="return validateRegisterForm();">
                         
                         
                         <div class="form-floating mb-3">
@@ -38,8 +38,9 @@ require_once 'layouts/header.php';
                         </div>
 
                         <div class="form-floating mb-3">
-                            <input type="password" class="form-control" id="password" name="password" placeholder="Password" required>
+                            <input type="password" class="form-control" id="password" name="password" placeholder="Password" required minlength="8">
                             <label for="password">Password</label>
+                            <div class="form-text">Must be at least 8 characters long.</div>
                         </div>
 
                         <!-- Role Selection Dropdown -->
@@ -51,10 +52,43 @@ require_once 'layouts/header.php';
                                 <option value="fundi">Fundi (Offering a service)</option>
                             </select>
                         </div>
-                        
-                       
+
+                        <!-- 2FA Setup Option -->
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="enable_2fa" name="enable_2fa" onchange="toggle2FAMessage()">
+                            <label class="form-check-label" for="enable_2fa">Enable Two-Factor Authentication (Recommended)</label>
+                        </div>
+                        <div id="2fa_message" class="alert alert-info d-none">
+                            After registration, you'll be prompted to set up 2FA using an authenticator app.
+                        </div>
+
                         <button type="submit" class="btn btn-primary w-100 btn-lg">Create Account</button>
                     </form>
+                    <script>
+                    function validateRegisterForm() {
+                        var email = document.getElementById('email').value;
+                        var pw = document.getElementById('password').value;
+                        var re = /^(([^<>()\[\]\\.,;:\s@\"]+(\.[^<>()\[\]\\.,;:\s@\"]+)*)|(".+"))@(([^<>()[\]\\.,;:\s@\"]+\.)+[^<>()[\]\\.,;:\s@\"]{2,})$/i;
+                        if (!re.test(email)) {
+                            alert('Please enter a valid email address.');
+                            return false;
+                        }
+                        if (pw.length < 8) {
+                            alert('Password must be at least 8 characters long.');
+                            return false;
+                        }
+                        return true;
+                    }
+                    function toggle2FAMessage() {
+                        var cb = document.getElementById('enable_2fa');
+                        var msg = document.getElementById('2fa_message');
+                        if (cb.checked) {
+                            msg.classList.remove('d-none');
+                        } else {
+                            msg.classList.add('d-none');
+                        }
+                    }
+                    </script>
                 </div>
             </div>
             <div class="text-center mt-3">

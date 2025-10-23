@@ -60,7 +60,7 @@ require_once 'layouts/header.php';
                             <button type="submit" name="login" class="btn btn-primary w-100 btn-lg">Login</button>
                         </form>
                         <div class="text-center mt-3">
-                            <a href="#">Forgot Password?</a>
+                            <a href="?action=forgotPassword">Forgot Password?</a>
                         </div>
                     
                     <?php endif; ?>
