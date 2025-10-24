@@ -18,20 +18,20 @@ class Service
     
     // CREATE A NEW SERVICE
     
-    public function create(string $name, float $price, string $description, string $status = 'active'): bool
-    {
-        $sql = "INSERT INTO {$this->table_name} (name, price, description, status, created_at)
-                VALUES (:name, :price, :description, :status, NOW())";
+   public function create(string $name, string $category, float $price, string $description, string $status = 'active'): bool
+{
+    $sql = "INSERT INTO {$this->table_name} (name, category, price, description, status, created_at)
+            VALUES (:name, :category, :price, :description, :status, NOW())";
 
-        $stmt = $this->conn->prepare($sql);
-        $stmt->bindParam(':name', $name);
-        $stmt->bindParam(':price', $price);
-        $stmt->bindParam(':description', $description);
-        $stmt->bindParam(':status', $status);
+    $stmt = $this->conn->prepare($sql);
+    $stmt->bindParam(':name', $name);
+    $stmt->bindParam(':category', $category);
+    $stmt->bindParam(':price', $price);
+    $stmt->bindParam(':description', $description);
+    $stmt->bindParam(':status', $status);
 
-        return $stmt->execute();
-    }
-
+    return $stmt->execute();
+}
     
     // GET ALL SERVICES
     
@@ -63,22 +63,22 @@ class Service
     
     // UPDATE A SERVICE
     
-    public function update(int $id, string $name, float $price, string $description, string $status): bool
-    {
-        $sql = "UPDATE {$this->table_name} 
-                SET name = :name, price = :price, description = :description, status = :status
-                WHERE id = :id";
-        $stmt = $this->conn->prepare($sql);
+ public function update(int $id, string $name, string $category, float $price, string $description, string $status): bool
+{
+    $sql = "UPDATE {$this->table_name} 
+            SET name = :name, category = :category, price = :price, description = :description, status = :status
+            WHERE id = :id";
+    $stmt = $this->conn->prepare($sql);
 
-        $stmt->bindParam(':name', $name);
-        $stmt->bindParam(':price', $price);
-        $stmt->bindParam(':description', $description);
-        $stmt->bindParam(':status', $status);
-        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+    $stmt->bindParam(':name', $name);
+    $stmt->bindParam(':category', $category);
+    $stmt->bindParam(':price', $price);
+    $stmt->bindParam(':description', $description);
+    $stmt->bindParam(':status', $status);
+    $stmt->bindParam(':id', $id, PDO::PARAM_INT);
 
-        return $stmt->execute();
-    }
-
+    return $stmt->execute();
+}
     
     // DELETE A SERVICE
     

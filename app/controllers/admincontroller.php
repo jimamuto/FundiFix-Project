@@ -97,25 +97,26 @@ class AdminController
         include __DIR__ . '/../Views/Admin/services_list.php';
     }
 
-    public function addService()
-    {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $name = $_POST['name'];
-            $price = $_POST['price'];
-            $description = $_POST['description'];
-            $status = $_POST['status'] ?? 'active';
+   public function addService()
+{
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $name = $_POST['name'];
+        $category = $_POST['category'] ?? 'General'; // Add category field
+        $price = $_POST['price'];
+        $description = $_POST['description'];
+        $status = $_POST['status'] ?? 'active';
 
-            if ($this->serviceModel->create($name, $price, $description, $status)) {
-                $_SESSION['success'] = "Service added successfully.";
-                header('Location: index.php?action=admin_services');
-                exit;
-            } else {
-                $_SESSION['error'] = "Failed to add service.";
-            }
+        if ($this->serviceModel->create($name, $category, $price, $description, $status)) {
+            $_SESSION['success'] = "Service added successfully.";
+            header('Location: index.php?action=admin_services');
+            exit;
+        } else {
+            $_SESSION['error'] = "Failed to add service.";
         }
-
-        include __DIR__ . '/../Views/Admin/add_service.php';
     }
+
+    include __DIR__ . '/../Views/Admin/add_service.php';
+}
 
     public function editService($id)
     {
@@ -130,22 +131,23 @@ class AdminController
     }
 
     public function updateService($data)
-    {
-        $id = $data['id'];
-        $name = $data['name'];
-        $price = $data['price'];
-        $description = $data['description'];
-        $status = $data['status'];
+{
+    $id = $data['id'];
+    $name = $data['name'];
+    $category = $data['category'] ?? 'General';
+    $price = $data['price'];
+    $description = $data['description'];
+    $status = $data['status'];
 
-        if ($this->serviceModel->update($id, $name, $price, $description, $status)) {
-            $_SESSION['success'] = "Service updated successfully.";
-        } else {
-            $_SESSION['error'] = "Failed to update service.";
-        }
-
-        header('Location: index.php?action=admin_services');
-        exit;
+    if ($this->serviceModel->update($id, $name, $category, $price, $description, $status)) {
+        $_SESSION['success'] = "Service updated successfully.";
+    } else {
+        $_SESSION['error'] = "Failed to update service.";
     }
+
+    header('Location: index.php?action=admin_services');
+    exit;
+}
 
     public function deleteService($id)
     {
