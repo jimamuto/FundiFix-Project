@@ -15,8 +15,8 @@ try {
 
     $conn->exec("
         INSERT INTO users (name, email, password, role) VALUES
-        ('Admin User', 'admin@example.com', '$password', 'resident'),
-        ('John Fundi', 'fundi@example.com', '$password', 'fundi'),
+        ('Admin User', 'onyangojimmy2005@gmail.com', '$password', 'admin'),
+        ('John Fundi', 'john@example.com', '$password', 'fundi'),
         ('Jane Resident', 'resident@example.com', '$password', 'resident')
     ");
     echo "Seeded 'users' table.<br>";
@@ -28,14 +28,15 @@ try {
     ");
     echo "Seeded 'fundi_profiles' table.<br>";
 
-    // ------------------------- SERVICES -------------------------
-    $conn->exec("
-        INSERT INTO services (name, description) VALUES
-        ('Plumbing', 'Fixing pipes, leaks, taps, and water systems'),
-        ('Electrical', 'Wiring, lighting, and electrical repairs'),
-        ('Carpentry', 'Furniture repairs and woodwork')
-    ");
-    echo "Seeded 'services' table.<br>";
+    /// ------------------------- SERVICES -------------------------
+$conn->exec("
+    INSERT INTO services (name, description, price, status) VALUES
+    ('Plumbing', 'Fixing pipes, leaks, taps, and water systems', 1500.00, 'active'),
+    ('Electrical', 'Wiring, lighting, and electrical repairs', 2000.00, 'active'),
+    ('Carpentry', 'Furniture repairs and woodwork', 1800.00, 'inactive')
+");
+echo "Seeded 'services' table.<br>";
+
 
     // ------------------------- FUNDI SERVICES -------------------------
     $conn->exec("

@@ -18,16 +18,16 @@ class Service
     
     // CREATE A NEW SERVICE
     
-    public function create(string $name, string $category, float $price, string $description): bool
+    public function create(string $name, float $price, string $description, string $status = 'active'): bool
     {
-        $sql = "INSERT INTO {$this->table_name} (name, category, price, description, created_at)
-                VALUES (:name, :category, :price, :description, NOW())";
+        $sql = "INSERT INTO {$this->table_name} (name, price, description, status, created_at)
+                VALUES (:name, :price, :description, :status, NOW())";
 
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':name', $name);
-        $stmt->bindParam(':category', $category);
         $stmt->bindParam(':price', $price);
         $stmt->bindParam(':description', $description);
+        $stmt->bindParam(':status', $status);
 
         return $stmt->execute();
     }
@@ -37,7 +37,7 @@ class Service
     
     public function getAllServices(): array
     {
-        $sql = "SELECT id, name, category, price, description, created_at 
+        $sql = "SELECT id, name, price, description, status, created_at 
                 FROM {$this->table_name} 
                 ORDER BY id DESC";
         $stmt = $this->conn->query($sql);
@@ -49,7 +49,7 @@ class Service
     
     public function findById(int $id): ?array
     {
-        $sql = "SELECT id, name, category, price, description, created_at
+        $sql = "SELECT id, name, price, description, status, created_at
                 FROM {$this->table_name}
                 WHERE id = :id LIMIT 1";
         $stmt = $this->conn->prepare($sql);
@@ -63,17 +63,17 @@ class Service
     
     // UPDATE A SERVICE
     
-    public function update(int $id, string $name, string $category, float $price, string $description): bool
+    public function update(int $id, string $name, float $price, string $description, string $status): bool
     {
         $sql = "UPDATE {$this->table_name} 
-                SET name = :name, category = :category, price = :price, description = :description
+                SET name = :name, price = :price, description = :description, status = :status
                 WHERE id = :id";
         $stmt = $this->conn->prepare($sql);
 
         $stmt->bindParam(':name', $name);
-        $stmt->bindParam(':category', $category);
         $stmt->bindParam(':price', $price);
         $stmt->bindParam(':description', $description);
+        $stmt->bindParam(':status', $status);
         $stmt->bindParam(':id', $id, PDO::PARAM_INT);
 
         return $stmt->execute();

@@ -56,11 +56,15 @@ createTable($conn, 'users', [
   'name' => 'VARCHAR(255) NOT NULL',
   'email' => 'VARCHAR(255) NOT NULL UNIQUE',
   'password' => 'VARCHAR(255) NOT NULL',
-  "role" => "ENUM('resident','fundi') NOT NULL",
+  "role" => "ENUM('resident','fundi','admin') NOT NULL DEFAULT 'resident'",
+  'verification_code' => 'VARCHAR(10) DEFAULT NULL',
+  'is_verified' => 'TINYINT(1) DEFAULT 0',
   'created_at' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
   'password_reset_token' => 'VARCHAR(255) DEFAULT NULL',
   'password_reset_expires_at' => 'DATETIME DEFAULT NULL'
 ]);
+
+
 
 // ------------------------- FUNDI PROFILES -------------------------
 createTable($conn, 'fundi_profiles', [
@@ -72,12 +76,16 @@ createTable($conn, 'fundi_profiles', [
   'updated_at' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'
 ]);
 
-// ------------------------- SERVICES -------------------------
 createTable($conn, 'services', [
   'id' => 'INT(11) AUTO_INCREMENT PRIMARY KEY',
   'name' => 'VARCHAR(100) NOT NULL UNIQUE',
-  'description' => 'TEXT DEFAULT NULL'
+  'category' => 'VARCHAR(100) NOT NULL', 
+  'description' => 'TEXT DEFAULT NULL',
+  'price' => 'DECIMAL(10,2) NOT NULL DEFAULT 0.00',
+  "status" => "ENUM('active','inactive') NOT NULL DEFAULT 'active'",
+  'created_at' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP'
 ]);
+
 
 // ------------------------- FUNDI SERVICES -------------------------
 createTable($conn, 'fundi_services', [

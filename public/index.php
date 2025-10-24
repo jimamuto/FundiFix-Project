@@ -1,43 +1,167 @@
 <?php
-// Start a session for login handling
 session_start();
 
-// 1. Load Composer's Autoloader 
-// This one file automatically loads all your classes (User, UserController, etc.)
-// so you don't need to 'require' them manually.
 require_once __DIR__ . '/../vendor/autoload.php';
 
-
-
-// 2. Load Environment Variables from the .env file
-// This loads your DB_HOST, DB_USER, etc., fixing all database warnings.
-$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/../');
-$dotenv->load();
-
-// 3. Bring the necessary classes into the current scope
+use App\Config\Database;
 use App\Controllers\UserController;
+use App\Controllers\AdminController;
+use Dotenv\Dotenv;
 
-// 4. CREATE THE CONTROLLER & ROUTE THE REQUEST
-$userController = new UserController();
+// ----------------------
+// Load Environment
+// ----------------------
+$dotenvPath = dirname(__DIR__);
+if (file_exists($dotenvPath . '/.env')) {
+    $dotenv = Dotenv::createImmutable($dotenvPath);
+    $dotenv->load();
+} else {
+    die("⚠️ Missing .env file in project root.");
+}
 
-// Use a simple router to handle different pages ('actions')
-$action = $_GET['action'] ?? 'home';
+// ----------------------
+// Initialize Database
+// ----------------------
+$db = new Database();
+$conn = $db->connect();
 
+$userController = new UserController($conn);
+$adminController = new AdminController($conn);
+
+// ----------------------
+// Session & Role Check
+// ----------------------
+$isLoggedIn = isset($_SESSION['user']);
+$isAdmin = $isLoggedIn && ($_SESSION['user']['role'] ?? '') === 'admin';
+
+// Normalize action to lowercase and underscores
+$action = strtolower(str_replace('-', '_', $_GET['action'] ?? ''));
+
+// Default routes
+if (empty($action)) {
+    $action = $isAdmin ? 'admin_dashboard' : 'home';
+}
+
+// ----------------------
+// Prevent Unauthorized Admin Access
+// ----------------------
+if (strpos($action, 'admin_') === 0 && !$isAdmin) {
+    // Prevent redirect loop if already on home or login
+    if (!in_array($action, ['home', 'login'])) {
+        header('Location: index.php?action=home');
+        exit;
+    }
+}
+
+// ----------------------
+// ROUTER
+// ----------------------
 switch ($action) {
+
+    // ---------- PUBLIC ----------
+    case 'home':
+        $userController->home();
+        break;
+
     case 'register':
         $userController->register();
         break;
+
+    case 'verifyaccount':
+        $userController->verifyAccount();
+        break;
+
     case 'login':
         $userController->login();
         break;
-    case 'dashboard':
-        $userController->dashboard();
+
+    case 'verify2fa':
+        $userController->verify2fa();
         break;
+
     case 'logout':
         $userController->logout();
         break;
-    default:
-        // By default, show the home page
-        $userController->home();
+
+    case 'dashboard':
+        $userController->dashboard();
         break;
+
+    // ---------- ADMIN ----------
+    case 'admin_dashboard':
+        $adminController->showDashboard();
+        break;
+
+    case 'admin_users':
+        $adminController->showUsers();
+        break;
+
+    case 'edit_user':
+        if (isset($_GET['id'])) {
+            $adminController->editUser($_GET['id']);
+        } else {
+            header('Location: index.php?action=admin_users');
+            exit;
+        }
+        break;
+
+    case 'update_user':
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $adminController->updateUser($_POST);
+        } else {
+            header('Location: index.php?action=admin_users');
+            exit;
+        }
+        break;
+
+    case 'delete_user':
+        if (isset($_GET['id'])) {
+            $adminController->deleteUser($_GET['id']);
+        } else {
+            header('Location: index.php?action=admin_users');
+            exit;
+        }
+        break;
+
+            // ---------- SERVICES ----------
+    case 'admin_services':
+        $adminController->showServices();
+        break;
+
+    case 'add_service':
+        $adminController->addService();
+        break;
+
+    case 'edit_service':
+        if (isset($_GET['id'])) {
+            $adminController->editService($_GET['id']);
+        } else {
+            header('Location: index.php?action=admin_services');
+            exit;
+        }
+        break;
+
+    case 'update_service':
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $adminController->updateService($_POST);
+        } else {
+            header('Location: index.php?action=admin_services');
+            exit;
+        }
+        break;
+
+    case 'delete_service':
+        if (isset($_GET['id'])) {
+            $adminController->deleteService($_GET['id']);
+        } else {
+            header('Location: index.php?action=admin_services');
+            exit;
+        }
+        break;
+
+
+    // ---------- FALLBACK ----------
+    default:
+        header('Location: index.php?action=home');
+        exit;
 }

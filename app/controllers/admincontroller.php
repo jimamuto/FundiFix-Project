@@ -1,235 +1,161 @@
 <?php
-
 namespace App\Controllers;
 
-use App\Config\Database;
+use App\Models\User;
+use App\Models\Service;
 use PDO;
-use Exception;
 
 class AdminController
 {
-    private PDO $conn;
+    private $conn;
+    private $userModel;
+    private $serviceModel;
 
-    public function __construct()
+    public function __construct($db)
     {
-        // Initialize database connection
-        $database = new Database();
-        $this->conn = $database->getConnection();
-        
-        // Check admin authentication
-        $this->checkAdmin();
+        $this->conn = $db;
+        $this->userModel = new User($db);
+        $this->serviceModel = new Service($db);
     }
 
-    private function checkAdmin(): void
+    // -------------------- DASHBOARD --------------------
+    public function showDashboard()
     {
-        if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin') {
-            header("Location: ?action=login");
-            exit;
-        }
+        $users = $this->userModel->getAllUsers();
+        $services = $this->serviceModel->getAllServices();
+
+        $usersCount = count($users);
+        $servicesCount = count($services);
+
+        include __DIR__ . '/../Views/Admin/dashboard.php';
     }
 
-    public function dashboard(): void
+    // -------------------- USERS MANAGEMENT --------------------
+    public function showUsers()
     {
-        // Get statistics for dashboard
-        $usersCount = $this->conn->query("SELECT COUNT(*) FROM users")->fetchColumn();
-        $servicesCount = $this->conn->query("SELECT COUNT(*) FROM services")->fetchColumn();
-        $activeServices = $this->conn->query("SELECT COUNT(*) FROM services WHERE status = 'active'")->fetchColumn();
-
-        require_once __DIR__ . '/../Views/admin/dashboard.php';
+        $users = $this->userModel->getAllUsers();
+        include __DIR__ . '/../Views/Admin/users_list.php';
     }
 
-    // Show all users with CRUD operations
-    public function showUsers(): void
+    public function editUser($id)
     {
-        $stmt = $this->conn->query("SELECT id, name, email, role, is_verified, created_at FROM users ORDER BY id ASC");
-        $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        require_once __DIR__ . '/../Views/admin/users_list.php';
-    }
-
-    // Show all services with CRUD operations
-    public function showServices(): void
-    {
-        $stmt = $this->conn->query("SELECT id, name, description, price, status, created_at FROM services ORDER BY id ASC");
-        $services = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        require_once __DIR__ . '/../Views/admin/services_list.php';
-    }
-
-    // Edit User Form
-    public function editUserForm(): void
-    {
-        if (!isset($_GET['id'])) {
-            header("Location: ?action=admin_users");
-            exit;
-        }
-
-        $id = intval($_GET['id']);
-        $stmt = $this->conn->prepare("SELECT id, name, email, role, is_verified FROM users WHERE id = ?");
-        $stmt->execute([$id]);
-        $user = $stmt->fetch(PDO::FETCH_ASSOC);
-
+        $user = $this->userModel->findById($id);
         if (!$user) {
-            header("Location: ?action=admin_users");
+            $_SESSION['error'] = "User not found.";
+            header('Location: index.php?action=admin_users');
             exit;
         }
 
-        require_once __DIR__ . '/../Views/admin/edit_user.php';
+        include __DIR__ . '/../Views/Admin/edit_user.php';
     }
 
-    // Update User
-    public function updateUser(): void
+    public function updateUser($data)
     {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header("Location: ?action=admin_users");
-            exit;
-        }
+        $id = $data['id'];
+        $name = $data['name'];
+        $email = $data['email'];
+        $role = $data['role'];
+        $is_verified = isset($data['is_verified']) ? 1 : 0;
 
-        $id = intval($_POST['id']);
-        $name = htmlspecialchars($_POST['name']);
-        $email = filter_var($_POST['email'], FILTER_SANITIZE_EMAIL);
-        $role = $_POST['role'];
-        $is_verified = isset($_POST['is_verified']) ? 1 : 0;
+        $query = "UPDATE users 
+                  SET name = :name, email = :email, role = :role, is_verified = :is_verified 
+                  WHERE id = :id";
 
-        $stmt = $this->conn->prepare("UPDATE users SET name = ?, email = ?, role = ?, is_verified = ? WHERE id = ?");
-        
-        if ($stmt->execute([$name, $email, $role, $is_verified, $id])) {
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':name', $name);
+        $stmt->bindParam(':email', $email);
+        $stmt->bindParam(':role', $role);
+        $stmt->bindParam(':is_verified', $is_verified, PDO::PARAM_BOOL);
+        $stmt->bindParam(':id', $id);
+
+        if ($stmt->execute()) {
             $_SESSION['success'] = "User updated successfully!";
         } else {
-            $_SESSION['error'] = "Failed to update user!";
+            $_SESSION['error'] = "Failed to update user.";
         }
 
-        header("Location: ?action=admin_users");
+        header('Location: index.php?action=admin_users');
         exit;
     }
 
-    // Add Service Form
-    public function addServiceForm(): void
+    public function deleteUser($id)
     {
-        require_once __DIR__ . '/../Views/admin/add_service.php';
-    }
-
-    // Create Service
-    public function createService(): void
-    {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header("Location: ?action=admin_services");
-            exit;
-        }
-
-        $name = htmlspecialchars($_POST['name']);
-        $description = htmlspecialchars($_POST['description']);
-        $price = floatval($_POST['price']);
-        $status = $_POST['status'];
-
-        $stmt = $this->conn->prepare("INSERT INTO services (name, description, price, status) VALUES (?, ?, ?, ?)");
-        
-        if ($stmt->execute([$name, $description, $price, $status])) {
-            $_SESSION['success'] = "Service created successfully!";
+        if ($this->userModel->deleteUser($id)) {
+            $_SESSION['success'] = "User deleted successfully.";
         } else {
-            $_SESSION['error'] = "Failed to create service!";
+            $_SESSION['error'] = "Failed to delete user.";
         }
 
-        header("Location: ?action=admin_services");
+        header('Location: index.php?action=admin_users');
         exit;
     }
 
-    // Edit Service Form
-    public function editServiceForm(): void
+    // -------------------- SERVICES MANAGEMENT --------------------
+    public function showServices()
     {
-        if (!isset($_GET['id'])) {
-            header("Location: ?action=admin_services");
-            exit;
+        $services = $this->serviceModel->getAllServices();
+        include __DIR__ . '/../Views/Admin/services_list.php';
+    }
+
+    public function addService()
+    {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $name = $_POST['name'];
+            $price = $_POST['price'];
+            $description = $_POST['description'];
+            $status = $_POST['status'] ?? 'active';
+
+            if ($this->serviceModel->create($name, $price, $description, $status)) {
+                $_SESSION['success'] = "Service added successfully.";
+                header('Location: index.php?action=admin_services');
+                exit;
+            } else {
+                $_SESSION['error'] = "Failed to add service.";
+            }
         }
 
-        $id = intval($_GET['id']);
-        $stmt = $this->conn->prepare("SELECT id, name, description, price, status FROM services WHERE id = ?");
-        $stmt->execute([$id]);
-        $service = $stmt->fetch(PDO::FETCH_ASSOC);
+        include __DIR__ . '/../Views/Admin/add_service.php';
+    }
 
+    public function editService($id)
+    {
+        $service = $this->serviceModel->findById($id);
         if (!$service) {
-            header("Location: ?action=admin_services");
+            $_SESSION['error'] = "Service not found.";
+            header('Location: index.php?action=admin_services');
             exit;
         }
 
-        require_once __DIR__ . '/../Views/admin/edit_service.php';
+        include __DIR__ . '/../Views/Admin/edit_service.php';
     }
 
-    // Update Service
-    public function updateService(): void
+    public function updateService($data)
     {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header("Location: ?action=admin_services");
-            exit;
-        }
+        $id = $data['id'];
+        $name = $data['name'];
+        $price = $data['price'];
+        $description = $data['description'];
+        $status = $data['status'];
 
-        $id = intval($_POST['id']);
-        $name = htmlspecialchars($_POST['name']);
-        $description = htmlspecialchars($_POST['description']);
-        $price = floatval($_POST['price']);
-        $status = $_POST['status'];
-
-        $stmt = $this->conn->prepare("UPDATE services SET name = ?, description = ?, price = ?, status = ? WHERE id = ?");
-        
-        if ($stmt->execute([$name, $description, $price, $status, $id])) {
-            $_SESSION['success'] = "Service updated successfully!";
+        if ($this->serviceModel->update($id, $name, $price, $description, $status)) {
+            $_SESSION['success'] = "Service updated successfully.";
         } else {
-            $_SESSION['error'] = "Failed to update service!";
+            $_SESSION['error'] = "Failed to update service.";
         }
 
-        header("Location: ?action=admin_services");
+        header('Location: index.php?action=admin_services');
         exit;
     }
 
-    // Delete a user
-    public function deleteUser(): void
+    public function deleteService($id)
     {
-        if (!isset($_GET['id'])) {
-            $_SESSION['error'] = "No user ID provided!";
-            header("Location: ?action=admin_users");
-            exit;
-        }
-
-        $id = intval($_GET['id']);
-        
-        // Prevent admin from deleting themselves
-        if (isset($_SESSION['user_id']) && $_SESSION['user_id'] == $id) {
-            $_SESSION['error'] = "You cannot delete your own account!";
-            header("Location: ?action=admin_users");
-            exit;
-        }
-
-        $stmt = $this->conn->prepare("DELETE FROM users WHERE id = ?");
-        
-        if ($stmt->execute([$id])) {
-            $_SESSION['success'] = "User deleted successfully!";
+        if ($this->serviceModel->deleteService($id)) {
+            $_SESSION['success'] = "Service deleted successfully.";
         } else {
-            $_SESSION['error'] = "Failed to delete user!";
+            $_SESSION['error'] = "Failed to delete service.";
         }
 
-        header("Location: ?action=admin_users");
-        exit;
-    }
-
-    // Delete a service
-    public function deleteService(): void
-    {
-        if (!isset($_GET['id'])) {
-            $_SESSION['error'] = "No service ID provided!";
-            header("Location: ?action=admin_services");
-            exit;
-        }
-
-        $id = intval($_GET['id']);
-        $stmt = $this->conn->prepare("DELETE FROM services WHERE id = ?");
-        
-        if ($stmt->execute([$id])) {
-            $_SESSION['success'] = "Service deleted successfully!";
-        } else {
-            $_SESSION['error'] = "Failed to delete service!";
-        }
-
-        header("Location: ?action=admin_services");
+        header('Location: index.php?action=admin_services');
         exit;
     }
 }
