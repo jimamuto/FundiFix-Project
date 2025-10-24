@@ -1,5 +1,13 @@
 <?php
-session_start();
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Verify session is working
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    die('Session failed to start');
+}
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
@@ -8,30 +16,27 @@ use App\Controllers\UserController;
 use App\Controllers\AdminController;
 use Dotenv\Dotenv;
 
-// ----------------------
+
 // Load Environment
-// ----------------------
+
 $dotenvPath = dirname(__DIR__);
 if (file_exists($dotenvPath . '/.env')) {
     $dotenv = Dotenv::createImmutable($dotenvPath);
     $dotenv->load();
 } else {
-    die("⚠️ Missing .env file in project root.");
+    die(" Missing .env file in project root.");
 }
 
-// ----------------------
+
 // Initialize Database
-// ----------------------
+
 $db = new Database();
 $conn = $db->connect();
 
 $userController = new UserController($conn);
 $adminController = new AdminController($conn);
 
-// ----------------------
-// Session & Role Check
-// ----------------------
-$isLoggedIn = isset($_SESSION['user']);
+// Session & Role Check$isLoggedIn = isset($_SESSION['user']);
 $isAdmin = $isLoggedIn && ($_SESSION['user']['role'] ?? '') === 'admin';
 
 // Normalize action to lowercase and underscores
@@ -42,9 +47,9 @@ if (empty($action)) {
     $action = $isAdmin ? 'admin_dashboard' : 'home';
 }
 
-// ----------------------
+
 // Prevent Unauthorized Admin Access
-// ----------------------
+
 if (strpos($action, 'admin_') === 0 && !$isAdmin) {
     // Prevent redirect loop if already on home or login
     if (!in_array($action, ['home', 'login'])) {
@@ -53,9 +58,9 @@ if (strpos($action, 'admin_') === 0 && !$isAdmin) {
     }
 }
 
-// ----------------------
+
 // ROUTER
-// ----------------------
+
 switch ($action) {
 
     // ---------- PUBLIC ----------
@@ -86,6 +91,16 @@ switch ($action) {
     case 'dashboard':
         $userController->dashboard();
         break;
+
+     
+
+case 'forgotpassword':
+    $userController->forgotPassword();
+    break;
+
+case 'resetpassword':
+    $userController->resetPassword();
+    break;
 
     // ---------- ADMIN ----------
     case 'admin_dashboard':
@@ -158,9 +173,21 @@ switch ($action) {
             exit;
         }
         break;
+        case 'profile':
+    $userController->profile();
+    break;
 
+        case 'updateprofile':
+    $userController->updateProfile();
+    break;
 
-    // ---------- FALLBACK ----------
+case 'reset_session':
+    session_destroy();
+    session_start();
+    header('Location: http://localhost/FundiFix-Project/public/index.php?action=home');
+    exit;
+    break;
+    // ---------- default ----------
     default:
         header('Location: index.php?action=home');
         exit;

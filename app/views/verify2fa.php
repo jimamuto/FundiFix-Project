@@ -5,9 +5,8 @@ if (session_status() === PHP_SESSION_NONE) {
 
 require_once 'layouts/header.php';
 
-// Check if this is for account verification or 2FA
-$isAccountVerification = !isset($_SESSION['2fa_user']) && isset($_SESSION['verify_email']);
-$email = $_SESSION['verify_email'] ?? '';
+// Get email from URL parameter or form
+$email = $_GET['email'] ?? ($_POST['email'] ?? '');
 ?>
 
 <div class="container mt-5">
@@ -17,12 +16,12 @@ $email = $_SESSION['verify_email'] ?? '';
                 <div class="card-body p-4 p-md-5">
 
                     <div class="text-center mb-4">
-                        <i class="bi bi-shield-check fs-1 text-primary"></i>
+                        <i class="bi bi-shield-lock-fill fs-1 text-primary"></i>
                         <h3 class="card-title mt-3">
-                            Verify Your Account
+                            Two-Factor Authentication
                         </h3>
                         <p class="text-muted">
-                            Enter the 6-digit verification code sent to your email during registration.
+                            Enter the 6-digit code sent to your email to complete your login.
                         </p>
                     </div>
 
@@ -33,22 +32,12 @@ $email = $_SESSION['verify_email'] ?? '';
                         </div>
                     <?php endif; ?>
 
-                    <!-- Account Verification Form -->
-                    <form action="http://localhost/FundiFix-Project/public/index.php?action=verifyAccount" method="POST" onsubmit="return validateCode();">
+                    <!-- 2FA Login Form -->
+                    <form action="http://localhost/FundiFix-Project/public/index.php?action=verify2fa" method="POST" onsubmit="return validateCode();">
                         
-                        <div class="form-floating mb-3">
-                            <input 
-                                type="email" 
-                                class="form-control" 
-                                id="email" 
-                                name="email" 
-                                placeholder="your@email.com" 
-                                value="<?php echo htmlspecialchars($email); ?>" 
-                                required
-                            >
-                            <label for="email">Your Email</label>
-                        </div>
-
+                        <!-- Hidden email field to persist it -->
+                        <input type="hidden" name="email" value="<?php echo htmlspecialchars($email); ?>">
+                        
                         <div class="form-floating mb-3">
                             <input 
                                 type="text" 
@@ -65,15 +54,15 @@ $email = $_SESSION['verify_email'] ?? '';
                         </div>
 
                         <button type="submit" class="btn btn-primary w-100 btn-lg">
-                            Verify Account
+                            Verify & Login
                         </button>
                     </form>
 
                     <div class="text-center mt-3">
                         <p class="text-muted">
                             Didn't receive the code? 
-                            <a href="http://localhost/FundiFix-Project/public/index.php?action=register">
-                                Register Again
+                            <a href="http://localhost/FundiFix-Project/public/index.php?action=login">
+                                Try again
                             </a>
                         </p>
                     </div>

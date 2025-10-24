@@ -1,9 +1,7 @@
 <?php
-
 namespace App\Models;
 
 use PDO;
-use PDOException;
 
 class User {
     private PDO $conn;
@@ -13,134 +11,119 @@ class User {
         $this->conn = $db;
     }
 
-    // USER RETRIEVAL METHODS
-  
+    
 
-    /**
-     * Find a user by their ID.
-     */
+// ---------------- 2FA MANAGEMENT ----------------
+public function store2FACode($email, $code)
+{
+    $sql = "UPDATE {$this->table_name} SET twofa_code = :code, twofa_created_at = NOW() WHERE email = :email";
+    $stmt = $this->conn->prepare($sql);
+    $stmt->bindParam(':code', $code);
+    $stmt->bindParam(':email', $email);
+    return $stmt->execute();
+}
+
+// ---------------- 2FA VERIFICATION ----------------
+public function verify2FACode($email, $code)
+{
+    $sql = "SELECT id, name, email, role, is_verified, twofa_code, twofa_created_at 
+            FROM {$this->table_name} 
+            WHERE email = :email AND twofa_code = :code 
+            AND twofa_created_at > DATE_SUB(NOW(), INTERVAL 10 MINUTE)";
+    
+    $stmt = $this->conn->prepare($sql);
+    $stmt->bindParam(':email', $email);
+    $stmt->bindParam(':code', $code);
+    $stmt->execute();
+    
+    return $stmt->fetch(PDO::FETCH_ASSOC);
+}
+
+public function clear2FACode($email)
+{
+    $sql = "UPDATE {$this->table_name} SET twofa_code = NULL, twofa_created_at = NULL WHERE email = :email";
+    $stmt = $this->conn->prepare($sql);
+    $stmt->bindParam(':email', $email);
+    return $stmt->execute();
+}
+
+    // ---------------- USER RETRIEVAL ----------------
     public function findById(int $id): ?array {
-        $query = "SELECT id, name, email, role, is_verified FROM {$this->table_name} WHERE id = ? LIMIT 1";
-        $stmt = $this->conn->prepare($query);
+        $stmt = $this->conn->prepare("SELECT id, name, email, role, password, is_verified, verification_code FROM {$this->table_name} WHERE id = ? LIMIT 1");
         $stmt->execute([$id]);
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 
-    /**
-     * Find a user by email.
-     */
     public function findByEmail(string $email): ?array {
-        $query = "SELECT * FROM {$this->table_name} WHERE email = ? LIMIT 1";
-        $stmt = $this->conn->prepare($query);
+        $stmt = $this->conn->prepare("SELECT * FROM {$this->table_name} WHERE email = ? LIMIT 1");
         $stmt->execute([$email]);
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 
-    
-    // USER AUTHENTICATION & REGISTRATION
-   
-
-    /**
-     * Register a new user.
-     */
-    public function register(string $name, string $email, string $password, string $role): bool {
-        // Prevent duplicate registration
-        if ($this->findByEmail($email)) {
-            return false;
-        }
-
-        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-        $verification_code = rand(100000, 999999); // 6-digit verification code
-
-        $query = "INSERT INTO {$this->table_name} 
-                  (name, email, password, role, verification_code, is_verified, created_at) 
-                  VALUES (?, ?, ?, ?, ?, 0, NOW())";
-
-        $stmt = $this->conn->prepare($query);
-        return $stmt->execute([$name, $email, $hashed_password, $role, $verification_code]);
+    // ---------------- GET ALL USERS (FOR ADMIN) ----------------
+    public function getAllUsers(): array {
+        $stmt = $this->conn->query("SELECT id, name, email, role, is_verified, created_at FROM {$this->table_name} ORDER BY id DESC");
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    /**
-     * Verify a user's account using the verification code.
-     */
-    public function verifyAccount(string $email, string $code): bool {
-        $query = "UPDATE {$this->table_name} 
-                  SET is_verified = 1, verification_code = NULL 
-                  WHERE email = ? AND verification_code = ?";
-        $stmt = $this->conn->prepare($query);
-        $stmt->execute([$email, $code]);
-        return $stmt->rowCount() > 0;
+    // ---------------- DELETE USER ----------------
+    public function deleteUser(int $id): bool {
+        $stmt = $this->conn->prepare("DELETE FROM {$this->table_name} WHERE id = ?");
+        return $stmt->execute([$id]);
     }
 
-    /**
-     * Authenticate a user (only if verified).
-     */
+    // ---------------- REGISTER ----------------
+    public function register(string $name, string $email, string $password, string $role, int $verification_code): bool {
+        if ($this->findByEmail($email)) return false;
+
+        $stmt = $this->conn->prepare("INSERT INTO {$this->table_name} 
+            (name, email, password, role, verification_code, is_verified, created_at) 
+            VALUES (?, ?, ?, ?, ?, 0, NOW())");
+
+        return $stmt->execute([$name, $email, $password, $role, $verification_code]);
+    }
+
+// ---------------- VERIFY ACCOUNT ----------------
+public function verifyAccount(string $email, int $code): bool {
+    $stmt = $this->conn->prepare("UPDATE {$this->table_name} 
+        SET is_verified = 1, verification_code = NULL 
+        WHERE email = ? AND verification_code = ?");
+    $stmt->execute([$email, $code]);
+    return $stmt->rowCount() > 0;
+}
+
+    // ---------------- LOGIN ----------------
     public function loginUser(string $email, string $password): array|false {
         $user = $this->findByEmail($email);
+        if (!$user || !password_verify($password, $user['password'])) return false;
 
-        if (!$user) {
-            return false;
+        if (!$user['is_verified']) {
+            return ['error' => 'Account not verified. Please check your email.'];
         }
 
-        // Verify password
-        if (!password_verify($password, $user['password'])) {
-            return false;
-        }
-
-        // Check verification
-        if (isset($user['is_verified']) && !$user['is_verified']) {
-            return ['error' => 'Account not verified. Please check your email for the 6-digit code.'];
-        }
-
-        // Remove sensitive data
         unset($user['password'], $user['verification_code']);
         return $user;
     }
 
-    public function getAllUsers(): array
-{
-    $sql = "SELECT id, name, email, role, is_verified, created_at FROM {$this->table_name} ORDER BY id DESC";
-    $stmt = $this->conn->query($sql);
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
-}
 
-public function deleteUser(int $id): bool
+    public function updateProfile($user_id, $name)
 {
-    $sql = "DELETE FROM {$this->table_name} WHERE id = :id";
+    $sql = "UPDATE users SET name = :name WHERE id = :id";
     $stmt = $this->conn->prepare($sql);
-    $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+    $stmt->bindParam(':name', $name);
+    $stmt->bindParam(':id', $user_id);
+    
     return $stmt->execute();
 }
 
-    
-    // PROFILE MANAGEMENT
-   
-
-    /**
-     * Update user details.
-     */
-    public function update(int $id, string $name, string $email): bool {
-        $query = "UPDATE {$this->table_name} SET name = ?, email = ? WHERE id = ?";
-        $stmt = $this->conn->prepare($query);
-        return $stmt->execute([$name, $email, $id]);
-    }
-
-    /**
-     * Update user password.
-     */
+    // ---------------- PASSWORD MANAGEMENT ----------------
     public function updatePassword(int $id, string $new_password): bool {
         $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
-        $query = "UPDATE {$this->table_name} SET password = ? WHERE id = ?";
-        $stmt = $this->conn->prepare($query);
+        $stmt = $this->conn->prepare("UPDATE {$this->table_name} SET password = ? WHERE id = ?");
         return $stmt->execute([$hashed_password, $id]);
     }
 
-    // PASSWORD RESET SYSTEM
-
-
-    /**
-     * Create a password reset token for the given email.
-     */
+    // ---------------- PASSWORD RESET ----------------
     public function setResetToken(string $email): ?string {
         $user = $this->findByEmail($email);
         if (!$user) return null;
@@ -148,48 +131,24 @@ public function deleteUser(int $id): bool
         $token = bin2hex(random_bytes(16));
         $expires = date('Y-m-d H:i:s', strtotime('+1 hour'));
 
-        $query = "UPDATE {$this->table_name}
-                  SET password_reset_token = :token, password_reset_expires_at = :expires
-                  WHERE email = :email";
+        $stmt = $this->conn->prepare("UPDATE {$this->table_name}
+                  SET password_reset_token = ?, password_reset_expires_at = ?
+                  WHERE email = ?");
 
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':token', $token);
-        $stmt->bindParam(':expires', $expires);
-        $stmt->bindParam(':email', $email);
-
-        return $stmt->execute() ? $token : null;
+        return $stmt->execute([$token, $expires, $email]) ? $token : null;
     }
 
-    /**
-     * Find user by password reset token.
-     */
     public function findByResetToken(string $token): ?array {
-        $query = "SELECT * FROM {$this->table_name}
-                  WHERE password_reset_token = :token
-                  AND password_reset_expires_at > NOW()
-                  LIMIT 1";
-
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':token', $token);
-        $stmt->execute();
-
+        $stmt = $this->conn->prepare("SELECT * FROM {$this->table_name}
+                  WHERE password_reset_token = ? AND password_reset_expires_at > NOW() LIMIT 1");
+        $stmt->execute([$token]);
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 
-    /**
-     * Update password using reset token.
-     */
     public function updatePasswordByToken(string $token, string $hashed_password): bool {
-        $query = "UPDATE {$this->table_name}
-                  SET password = :password,
-                      password_reset_token = NULL,
-                      password_reset_expires_at = NULL
-                  WHERE password_reset_token = :token
-                    AND password_reset_expires_at > NOW()";
-
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':password', $hashed_password);
-        $stmt->bindParam(':token', $token);
-        return $stmt->execute();
+        $stmt = $this->conn->prepare("UPDATE {$this->table_name}
+                  SET password = ?, password_reset_token = NULL, password_reset_expires_at = NULL
+                  WHERE password_reset_token = ? AND password_reset_expires_at > NOW()");
+        return $stmt->execute([$hashed_password, $token]);
     }
 }

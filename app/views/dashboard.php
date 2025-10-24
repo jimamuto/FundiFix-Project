@@ -1,7 +1,7 @@
 <?php
-//  If the user is not logged in, they are immediately redirected to the login page.
-if (!isset($_SESSION['user_id'])) {
-    header("Location: /FundiApp/public/?action=login");
+// If the user is not logged in, they are immediately redirected to the login page.
+if (!isset($_SESSION['user'])) {
+    header("Location: http://localhost/FundiFix-Project/public/index.php?action=login");
     exit();
 }
 
@@ -15,13 +15,10 @@ require_once 'layouts/header.php';
     <!-- Section 1: The Personalized Welcome Header -->
     <div class="d-flex justify-content-between align-items-center mb-5">
         <div>
-           
             <h5 class="text-muted fw-light">Dashboard</h5>
-           
-            <h1 class="fw-bold">Welcome Back!</h1>
+            <h1 class="fw-bold">Welcome Back, <?php echo htmlspecialchars($_SESSION['user']['name'] ?? 'User'); ?>!</h1>
         </div>
         <div>
-           
             <a href="#" class="btn btn-primary btn-lg">
                 <i class="bi bi-plus-circle me-2"></i>New Booking
             </a>
@@ -53,23 +50,17 @@ require_once 'layouts/header.php';
         </div>
     </div>
 
-
     <!-- Section 3: Main Action Cards -->
-  
     <div class="row">
         <div class="col-md-6 mb-4">
-         
             <div class="card shadow-sm border-0 h-100">
                 <div class="card-body d-flex flex-column p-4">
                     <div class="d-flex align-items-center mb-3">
-                       
                         <i class="bi bi-person-circle fs-2 text-primary me-3"></i>
                         <h4 class="card-title mb-0">Your Account</h4>
                     </div>
                     <p class="card-text text-muted">View your public profile and manage your personal information.</p>
-                   
-                   <a href="?action=profile" class="btn btn-outline-primary btn-lg">Manage My Profile</a>
-
+                    <a href="http://localhost/FundiFix-Project/public/index.php?action=profile" class="btn btn-outline-primary btn-lg">Manage My Profile</a>
                 </div>
             </div>
         </div>

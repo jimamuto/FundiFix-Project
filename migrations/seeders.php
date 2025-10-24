@@ -14,10 +14,10 @@ try {
     $password = password_hash("admin123", PASSWORD_DEFAULT);
 
     $conn->exec("
-        INSERT INTO users (name, email, password, role) VALUES
-        ('Admin User', 'onyangojimmy2005@gmail.com', '$password', 'admin'),
-        ('John Fundi', 'john@example.com', '$password', 'fundi'),
-        ('Jane Resident', 'resident@example.com', '$password', 'resident')
+        INSERT INTO users (name, email, password, role, is_verified) VALUES
+        ('Admin User', 'onyangojimmy2005@gmail.com', '$password', 'admin', 1),
+        ('John Fundi', 'john@example.com', '$password', 'fundi', 1),
+        ('Jane Resident', 'resident@example.com', '$password', 'resident', 1)
     ");
     echo "Seeded 'users' table.<br>";
 
@@ -28,13 +28,15 @@ try {
     ");
     echo "Seeded 'fundi_profiles' table.<br>";
 
-  // ------------------------- SERVICES -------------------------
-$conn->exec("
-    INSERT INTO services (name, category, description, price, status) VALUES
-    ('Plumbing', 'Home Repair', 'Fixing pipes, leaks, taps, and water systems', 1500.00, 'active'),
-    ('Electrical', 'Home Repair', 'Wiring, lighting, and electrical repairs', 2000.00, 'active'),
-    ('Carpentry', 'Woodwork', 'Furniture repairs and woodwork', 1800.00, 'inactive')
-");
+    // ------------------------- SERVICES -------------------------
+    $conn->exec("
+        INSERT INTO services (name, category, description, price, status) VALUES
+        ('Plumbing', 'Home Repair', 'Fixing pipes, leaks, taps, and water systems', 1500.00, 'active'),
+        ('Electrical', 'Home Repair', 'Wiring, lighting, and electrical repairs', 2000.00, 'active'),
+        ('Carpentry', 'Woodwork', 'Furniture repairs and woodwork', 1800.00, 'inactive')
+    ");
+    echo "Seeded 'services' table.<br>";
+
     // ------------------------- FUNDI SERVICES -------------------------
     $conn->exec("
         INSERT INTO fundi_services (fundi_profile_id, service_id) VALUES

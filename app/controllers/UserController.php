@@ -3,557 +3,432 @@
 namespace App\Controllers;
 
 use App\Models\User;
-use App\Config\Database;
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
+use PDO;
 
 class UserController
 {
-    private $conn;
-    private $user;
+    private User $user;
+    private string $baseUrl;
 
-    public function __construct()
+    public function __construct(PDO $db)
     {
-        $db = new Database();
-        $this->conn = $db->connect();
-        $this->user = new User($this->conn);
+        $this->user = new User($db);
+        $this->baseUrl = "http://localhost/FundiFix-Project/public/index.php";
     }
 
-<<<<<<< HEAD
-    // --- CORE ROUTER METHODS ---
-
-    public function home() {
-        require_once dirname(__DIR__) . '/views/home.php';
-=======
-    // ---------------------------------------------------------------------
-    // HOME PAGE
-    // ---------------------------------------------------------------------
-    public function home(): void
+    // ---------------- HOME ----------------
+    public function home()
     {
-        require_once dirname(__DIR__) . '/Views/home.php';
->>>>>>> c6445748be06d664450eee4d12d7e435cde10f61
-    }
-
-    // ---------------------------------------------------------------------
-    // REGISTER
-    // ---------------------------------------------------------------------
-    public function register(): void
-    {
-        $message = '';
-
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $name = htmlspecialchars(strip_tags($_POST['name']));
-            $email = htmlspecialchars(strip_tags($_POST['email']));
-            $password = $_POST['password'];
-            $role = htmlspecialchars(strip_tags($_POST['role']));
-
-            if (empty($name) || empty($email) || empty($password) || empty($role)) {
-                $message = "Please fill in all fields.";
-            } else {
-                if ($this->user->register($name, $email, $password, $role)) {
-                    $user = $this->user->findByEmail($email);
-                    $verification_code = $user['verification_code'];
-
-                    if ($this->sendVerificationEmail($email, $name, $verification_code)) {
-                        $_SESSION['pending_verification_email'] = $email;
-                        header("Location: ?action=verifyAccount");
-                        exit;
-                    } else {
-                        $message = "Registered successfully, but verification email could not be sent.";
-                    }
-                } else {
-                    $message = "Registration failed. Email may already exist.";
-                }
-            }
-        }
-<<<<<<< HEAD
-        require_once dirname(__DIR__) . '/views/register.php';
-=======
-
-        require_once dirname(__DIR__) . '/Views/register.php';
->>>>>>> c6445748be06d664450eee4d12d7e435cde10f61
-    }
-
-    // ---------------------------------------------------------------------
-    // ACCOUNT VERIFICATION
-    // ---------------------------------------------------------------------
-    public function verifyAccount(): void
-    {
-        $message = '';
-
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $email = htmlspecialchars(strip_tags($_POST['email']));
-            $code = htmlspecialchars(strip_tags($_POST['code']));
-
-            if ($this->user->verifyAccount($email, $code)) {
-                $_SESSION['message'] = "Account verified successfully! You can now log in.";
-                unset($_SESSION['pending_verification_email']);
-                header("Location: ?action=login");
-                exit;
-            } else {
-                $message = "Invalid verification code or email.";
-            }
-        }
-
-        require_once dirname(__DIR__) . '/Views/verify.php';
-    }
-
-    // ---------------------------------------------------------------------
-    // LOGIN (Admin skips 2FA)
-    // ---------------------------------------------------------------------
-    public function login(): void
-    {
-        $message = '';
-        $show_2fa_form = false;
-
-        // Step 1: User submits login credentials
-        if (isset($_POST['login'])) {
-            $email = htmlspecialchars(strip_tags($_POST['email']));
-            $password = $_POST['password'];
-            $found_user = $this->user->findByEmail($email);
-
-            if ($found_user && password_verify($password, $found_user['password'])) {
-
-                // Ensure user is verified (skip this for admin)
-                if ($found_user['role'] !== 'admin' && !$found_user['is_verified']) {
-                    $_SESSION['message'] = "Please verify your account before logging in.";
-                    $_SESSION['pending_verification_email'] = $found_user['email'];
-                    header("Location: ?action=verifyAccount");
-                    exit;
-                }
-
-                // If ADMIN — skip 2FA
-                if ($found_user['role'] === 'admin') {
-                    $_SESSION['user_id'] = $found_user['id'];
-                    $_SESSION['role'] = 'admin';
-                    header("Location: ?action=adminDashboard");
-                    exit;
-                }
-
-                // Generate and send 2FA code for other users
-                $two_fa_code = rand(100000, 999999);
-                $_SESSION['2fa_user_id'] = $found_user['id'];
-                $_SESSION['2fa_code'] = $two_fa_code;
-
-                if ($this->send2FACode($found_user['email'], $two_fa_code)) {
-                    $message = "A verification code has been sent to your email.";
-                    $show_2fa_form = true;
-                } else {
-                    $message = "Could not send verification code. Please try again.";
-                }
-            } else {
-                $message = "Invalid email or password.";
-            }
-        }
-
-        // Step 2: User enters 2FA code
-        if (isset($_POST['verify_2fa'])) {
-            $submitted_code = $_POST['2fa_code'] ?? '';
-            if (isset($_SESSION['2fa_code']) && $submitted_code == $_SESSION['2fa_code']) {
-                $_SESSION['user_id'] = $_SESSION['2fa_user_id'];
-                unset($_SESSION['2fa_user_id'], $_SESSION['2fa_code']);
-
-                $user = $this->user->findById($_SESSION['user_id']);
-                $_SESSION['role'] = $user['role'];
-
-                if ($user['role'] === 'admin') {
-                    header('Location: ?action=adminDashboard');
-                } elseif ($user['role'] === 'fundi') {
-                    header('Location: ?action=fundiDashboard');
-                } else {
-                    header('Location: ?action=dashboard');
-                }
-                exit;
-            }
-
-            $message = "Invalid verification code. Please try again.";
-            $show_2fa_form = true;
-        }
-<<<<<<< HEAD
-        require_once dirname(__DIR__) . '/views/login.php';
-    }
-
-    public function dashboard() {
-        if (!isset($_SESSION['user_id'])) {
-            header("Location: /FundiApp/public/?action=login");
-            exit();
-        }
-        $user = $this->user->findById($_SESSION['user_id']);
-        require_once dirname(__DIR__) . '/views/dashboard.php';
-    }
-
-    public function profile() {
-        if (!isset($_SESSION['user_id'])) {
-=======
-
-        require_once dirname(__DIR__) . '/Views/login.php';
-    }
-
-    // ---------------------------------------------------------------------
-    // DASHBOARD
-    // ---------------------------------------------------------------------
-    public function dashboard(): void
-    {
-        if (empty($_SESSION['user_id'])) {
->>>>>>> c6445748be06d664450eee4d12d7e435cde10f61
-            header("Location: ?action=login");
+        if (isset($_SESSION['user']) && !isset($_SESSION['2fa_user']) && !isset($_SESSION['verify_email'])) {
+            $role = $_SESSION['user']['role'];
+            $redirect = $role === 'admin' ? 'admin_dashboard' : 'dashboard';
+            header("Location: {$this->baseUrl}?action=$redirect");
             exit;
         }
 
-        $user = $this->user->findById($_SESSION['user_id']);
+        if (isset($_SESSION['2fa_user'])) {
+            header("Location: {$this->baseUrl}?action=verify2fa");
+            exit;
+        }
 
+        if (isset($_SESSION['verify_email'])) {
+            header("Location: {$this->baseUrl}?action=verifyAccount");
+            exit;
+        }
+
+        $pageTitle = "Welcome to FundiFix";
+        include __DIR__ . '/../Views/home.php';
+    }
+
+    // ---------------- DASHBOARD ----------------
+    public function dashboard()
+    {
+        if (!isset($_SESSION['user'])) {
+            header("Location: {$this->baseUrl}?action=login");
+            exit;
+        }
+
+        $user = $_SESSION['user'];
+        require_once(__DIR__ . '/../Views/dashboard.php');
+    }
+
+
+// ---------------- LOGIN ----------------
+public function login()
+{
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $email = trim($_POST['email'] ?? '');
+        $password = $_POST['password'] ?? '';
+
+        if (empty($email) || empty($password)) {
+            $message = "Please enter both email and password.";
+            require_once(__DIR__ . '/../Views/login.php');
+            return;
+        }
+
+        $user = $this->user->findByEmail($email);
+
+        if (!$user || !password_verify($password, $user['password'])) {
+            $message = "Invalid email or password.";
+            require_once(__DIR__ . '/../Views/login.php');
+            return;
+        }
+
+        // Skip 2FA for admins
+        if ($user['role'] === 'admin') {
+            $_SESSION['user'] = $user;
+            header("Location: {$this->baseUrl}?action=admin_dashboard");
+            exit;
+        }
+
+        // Check if account is verified
         if (!$user['is_verified']) {
-            session_unset();
-            $_SESSION['message'] = "Please verify your account first.";
-            header("Location: ?action=login");
-            exit;
-        }
-
-        require_once dirname(__DIR__) . '/Views/dashboard.php';
-    }
-
-    // ---------------------------------------------------------------------
-    // PROFILE
-    // ---------------------------------------------------------------------
-    public function profile(): void
-    {
-        if (empty($_SESSION['user_id'])) {
-            header("Location: ?action=login");
-            exit;
-        }
-
-        $user_data = $this->user->findById($_SESSION['user_id']);
-        if (!$user_data) {
-            $_SESSION['message'] = "User not found.";
-            header("Location: ?action=dashboard");
-            exit;
-        }
-
-<<<<<<< HEAD
-        require_once dirname(__DIR__) . '/views/profile.php';
-=======
-        require_once dirname(__DIR__) . '/Views/profile.php';
->>>>>>> c6445748be06d664450eee4d12d7e435cde10f61
-    }
-
-    public function editProfile(): void
-    {
-        if (empty($_SESSION['user_id'])) {
-            header("Location: ?action=login");
-            exit;
-        }
-
-        $user = $this->user->findById($_SESSION['user_id']);
-<<<<<<< HEAD
-        require_once dirname(__DIR__) . '/views/edit-profile.php';
-=======
-        require_once dirname(__DIR__) . '/Views/profile.php';
->>>>>>> c6445748be06d664450eee4d12d7e435cde10f61
-    }
-
-    public function updateProfile(): void
-    {
-        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_SESSION['user_id'])) {
-            $id = $_SESSION['user_id'];
-            $name = htmlspecialchars(strip_tags($_POST['name']));
-            $email = htmlspecialchars(strip_tags($_POST['email']));
-
-            if ($this->user->update($id, $name, $email)) {
-                $_SESSION['message'] = "Profile updated successfully!";
-                header("Location: ?action=dashboard");
-<<<<<<< HEAD
-                exit();
-            } else {
-                $message = "Failed to update profile. Please try again.";
-                $user = $this->user->findById($id);
-                require_once dirname(__DIR__) . '/views/edit-profile.php';
-=======
-                exit;
->>>>>>> c6445748be06d664450eee4d12d7e435cde10f61
-            }
-
-            $message = "Failed to update profile. Please try again.";
-            $user = $this->user->findById($id);
-            require_once dirname(__DIR__) . '/Views/edit-profile.php';
+            $message = "Please verify your account first. Check your email for the verification code.";
+            require_once(__DIR__ . '/../Views/login.php');
             return;
         }
 
-        header("Location: ?action=dashboard");
-        exit;
-    }
+        // Generate 2FA code and store in DATABASE
+        $code = rand(100000, 999999);
+        
+        // Store in database
+        if ($this->user->store2FACode($email, $code)) {
+           
 
-<<<<<<< HEAD
-    public function showChangePasswordPage() {
-        if (!isset($_SESSION['user_id'])) {
-            header("Location: /FundiApp/public/?action=login");
-            exit();
-        }
-        require_once dirname(__DIR__) . '/views/change-password.php';
-    }
+            // Send email
+            $this->sendEmail($email, "Your 2FA Code", 
+                "Hello {$user['name']},<br>Your 2FA code is: <b>$code</b>.<br>Use this to complete your login.");
 
-    public function updatePassword() {
-        if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_SESSION['user_id'])) {
-            $current_password = $_POST['current_password'];
-            $new_password = $_POST['new_password'];
-            $confirm_password = $_POST['confirm_password'];
-            $user_id = $_SESSION['user_id'];
-            $current_user = $this->user->findById($user_id);
-
-            if (!$current_user || !password_verify($current_password, $current_user['password'])) {
-                $message = "Your current password is incorrect.";
-                require_once dirname(__DIR__) . '/views/change-password.php';
-                return;
-            }
-            if (strlen($new_password) < 8 || $new_password !== $confirm_password) {
-                $message = "New passwords do not match or are too short.";
-                require_once dirname(__DIR__) . '/views/change-password.php';
-                return;
-            }
-
-            $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
-            if ($this->user->updatePassword($user_id, $hashed_password)) {
-                $_SESSION['message'] = "Your password has been changed successfully.";
-                header("Location: ?action=dashboard");
-                exit();
-            } else {
-                $message = "An error occurred. Please try again.";
-                require_once dirname(__DIR__) . '/views/change-password.php';
-            }
+            // Redirect with email as parameter
+            header("Location: {$this->baseUrl}?action=verify2fa&email=" . urlencode($email));
+            exit;
         } else {
-=======
-    // ---------------------------------------------------------------------
-    // PASSWORD CHANGE
-    // ---------------------------------------------------------------------
-    public function showChangePasswordPage(): void
-    {
-        if (empty($_SESSION['user_id'])) {
->>>>>>> c6445748be06d664450eee4d12d7e435cde10f61
-            header("Location: ?action=login");
+            $message = "Failed to generate verification code. Please try again.";
+            require_once(__DIR__ . '/../Views/login.php');
+        }
+    }
+
+    require_once(__DIR__ . '/../Views/login.php');
+}
+
+// ---------------- VERIFY 2FA ----------------
+
+public function verify2fa()
+{
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $code = $_POST['code'] ?? '';
+        $email = $_POST['email'] ?? $_GET['email'] ?? '';
+
+        // DEBUG INFO - 2FA VERIFICATION
+        echo "<div style='background: #f8f9fa; padding: 10px; margin: 10px; border: 1px solid #ddd;'>";
+        echo "<strong>2FA VERIFICATION DEBUG:</strong><br>";
+        echo "Code entered: " . htmlspecialchars($code) . "<br>";
+        echo "Email: " . htmlspecialchars($email) . "<br>";
+
+        // Verify against 2FA database (twofa_code)
+        $user = $this->user->verify2FACode($email, $code);
+        
+        echo "2FA Database verification: " . ($user ? 'SUCCESS' : 'FAILED') . "<br>";
+        if ($user) {
+            echo "User found: " . htmlspecialchars($user['name']) . "<br>";
+        } else {
+            echo "Possible reasons: Code expired, wrong code, or email mismatch<br>";
+        }
+        echo "</div>";
+
+        if ($user) {
+            // Clear the 2FA code from database
+            $this->user->clear2FACode($email);
+            
+            // Set user session (remove password for security)
+            unset($user['password'], $user['twofa_code'], $user['twofa_created_at']);
+            $_SESSION['user'] = $user;
+
+            header("Location: {$this->baseUrl}?action=dashboard");
             exit;
+        } else {
+            $message = "Invalid verification code or code expired. Please try again.";
+           
+            require_once(__DIR__ . '/../Views/verify2fa.php');
         }
-
-        require_once dirname(__DIR__) . '/Views/changepassword.php';
+    } else {
+      
+        require_once(__DIR__ . '/../Views/verify2fa.php');
     }
-
-    public function updatePassword(): void
-    {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST' || empty($_SESSION['user_id'])) {
-            header("Location: ?action=login");
-            exit;
-        }
-
-        $user_id = $_SESSION['user_id'];
-        $current_password = $_POST['current_password'];
-        $new_password = $_POST['new_password'];
-        $confirm_password = $_POST['confirm_password'];
-
-        $current_user = $this->user->findById($user_id);
-
-        if (!$current_user || !password_verify($current_password, $current_user['password'])) {
-            $message = "Your current password is incorrect.";
-            require dirname(__DIR__) . '/Views/changepassword.php';
-            return;
-        }
-
-        if (strlen($new_password) < 8 || $new_password !== $confirm_password) {
-            $message = "New passwords do not match or are too short.";
-            require dirname(__DIR__) . '/Views/changepassword.php';
-            return;
-        }
-
-        $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
-        if ($this->user->updatePassword($user_id, $hashed_password)) {
-            $_SESSION['message'] = "Your password has been changed successfully.";
-            header("Location: ?action=dashboard");
-            exit;
-        }
-
-        $message = "An error occurred. Please try again.";
-        require dirname(__DIR__) . '/Views/changepassword.php';
-    }
-
-    // ---------------------------------------------------------------------
-    // LOGOUT
-    // ---------------------------------------------------------------------
-    public function logout(): void
-    {
-        session_unset();
-        session_destroy();
-        header("Location: ?action=login");
-        exit;
-    }
-
-<<<<<<< HEAD
-    // --- FORGOT/RESET PASSWORD METHODS ---
-
-    public function showForgotPasswordPage() {
-        require_once dirname(__DIR__) . '/views/forgot-password.php';
-=======
-    // ---------------------------------------------------------------------
-    // PASSWORD RESET
-    // ---------------------------------------------------------------------
-    public function showForgotPasswordPage(): void
-    {
-        require_once dirname(__DIR__) . '/Views/forgotpassword.php';
->>>>>>> c6445748be06d664450eee4d12d7e435cde10f61
-    }
-
-    public function sendResetLink(): void
+}
+    // ---------------- REGISTER ----------------
+    public function register()
     {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $email = htmlspecialchars(strip_tags($_POST['email']));
-            $found_user = $this->user->findByEmail($email);
+            $name = trim($_POST['name'] ?? '');
+            $email = trim($_POST['email'] ?? '');
+            $password = $_POST['password'] ?? '';
+            $confirm = $_POST['confirm_password'] ?? '';
+            $role = $_POST['role'] ?? 'resident';
 
-            if ($found_user) {
-                $token = $this->user->setResetToken($email);
-                if ($token) {
-                    $this->sendPasswordResetEmail($email, $token);
-                }
-            }
-
-            $_SESSION['message'] = "If an account with that email exists, a password reset link has been sent.";
-            header("Location: ?action=forgotPassword");
-            exit;
-        }
-    }
-
-    public function showResetPasswordPage(): void
-    {
-        $token = $_GET['token'] ?? null;
-        $user = $this->user->findByResetToken($token);
-
-        if (!$token || !$user) {
-            $_SESSION['message'] = "This password reset link is invalid or has expired.";
-            header("Location: ?action=login");
-            exit;
-        }
-<<<<<<< HEAD
-        
-        require_once dirname(__DIR__) . '/views/reset-password.php';
-=======
-
-        require_once dirname(__DIR__) . '/Views/resetpassword.php';
->>>>>>> c6445748be06d664450eee4d12d7e435cde10f61
-    }
-
-    public function updatePasswordFromReset(): void
-    {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header("Location: ?action=login");
-            exit;
-        }
-
-<<<<<<< HEAD
-            if (strlen($new_password) < 8 || $new_password !== $confirm_password) {
-                $message = "Passwords do not match or are too short. Please try again.";
-                require_once dirname(__DIR__) . '/views/reset-password.php';
+            if (empty($name) || empty($email) || empty($password) || empty($confirm)) {
+                $message = "All fields are required.";
+                require_once(__DIR__ . '/../Views/register.php');
                 return;
             }
-=======
-        $token = $_POST['token'];
-        $new_password = $_POST['new_password'];
-        $confirm_password = $_POST['confirm_password'];
->>>>>>> c6445748be06d664450eee4d12d7e435cde10f61
+
+            if ($password !== $confirm) {
+                $message = "Passwords do not match.";
+                require_once(__DIR__ . '/../Views/register.php');
+                return;
+            }
+
+            if (!in_array($role, ['resident', 'fundi'])) {
+                $message = "Please select a valid role.";
+                require_once(__DIR__ . '/../Views/register.php');
+                return;
+            }
+
+            if ($this->user->findByEmail($email)) {
+                $message = "Email already registered.";
+                require_once(__DIR__ . '/../Views/register.php');
+                return;
+            }
+
+            $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+            $verificationCode = rand(100000, 999999);
+
+            $created = $this->user->register($name, $email, $hashedPassword, $role, $verificationCode);
+
+            if ($created) {
+                $_SESSION['verify_email'] = $email;
+                $subject = "FundiFix Verification Code";
+                $body = "Hello $name,<br>Your verification code is: <b>$verificationCode</b>.";
+
+                $this->sendEmail($email, $subject, $body);
+                header("Location: {$this->baseUrl}?action=verifyAccount");
+                exit;
+            } else {
+                $message = "Registration failed. Please try again.";
+            }
+        }
+
+        require_once(__DIR__ . '/../Views/register.php');
+    }
+
+   // ---------------- VERIFY ACCOUNT ----------------
+public function verifyAccount()
+{
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $email = $_POST['email'] ?? '';
+        $code = $_POST['code'] ?? '';
+
+
+        // Verify account using verification_code 
+        $verified = $this->user->verifyAccount($email, (int)$code);
+        
+   
+
+        if ($verified) {
+            $message = "Account verified successfully! You can now login.";
+            require_once(__DIR__ . '/../Views/login.php');
+            return;
+        } else {
+            $message = "Invalid verification code. Please check the code and try again.";
+            require_once(__DIR__ . '/../Views/verify.php');
+        }
+    } else {
+        // For GET requests, show the verification form
+        require_once(__DIR__ . '/../Views/verify.php');
+    }
+}
+    // ---------------- LOGOUT ----------------
+    public function logout()
+    {
+        session_destroy();
+        session_start();
+        header("Location: {$this->baseUrl}?action=home");
+        exit;
+    }
+
+    // ---------------- PROFILE ----------------
+    public function profile()
+    {
+        if (!isset($_SESSION['user'])) {
+            header("Location: {$this->baseUrl}?action=login");
+            exit;
+        }
+
+        $user = $_SESSION['user'];
+        require_once(__DIR__ . '/../Views/profile.php');
+    }
+
+    // ---------------- CHANGE PASSWORD ----------------
+    public function changePassword()
+    {
+        if (!isset($_SESSION['user'])) {
+            header("Location: {$this->baseUrl}?action=login");
+            exit;
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $current_password = $_POST['current_password'] ?? '';
+            $new_password = $_POST['new_password'] ?? '';
+            $confirm_password = $_POST['confirm_password'] ?? '';
+            $user_id = $_SESSION['user']['id'];
+
+            $user = $this->user->findById($user_id);
+
+            if (!$user || !password_verify($current_password, $user['password'])) {
+                $message = "Current password is incorrect.";
+                require_once(__DIR__ . '/../Views/changepassword.php');
+                return;
+            }
+
+            if ($new_password !== $confirm_password) {
+                $message = "New passwords do not match.";
+                require_once(__DIR__ . '/../Views/changepassword.php');
+                return;
+            }
+
+            if (strlen($new_password) < 8) {
+                $message = "New password must be at least 8 characters long.";
+                require_once(__DIR__ . '/../Views/changepassword.php');
+                return;
+            }
+
+            $updated = $this->user->updatePassword($user_id, $new_password);
+            $message = $updated ? "Password updated successfully!" : "Failed to update password.";
+        }
+
+        require_once(__DIR__ . '/../Views/changepassword.php');
+    }
+
+    // ---------------- UPDATE PROFILE ----------------
+    public function updateProfile()
+    {
+        if (!isset($_SESSION['user'])) {
+            header("Location: {$this->baseUrl}?action=login");
+            exit;
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $name = trim($_POST['name'] ?? '');
+            $user_id = $_SESSION['user']['id'];
+
+            if (empty($name)) {
+                $message = "Name cannot be empty.";
+                require_once(__DIR__ . '/../Views/profile.php');
+                return;
+            }
+
+            $updated = $this->user->updateProfile($user_id, $name);
+
+            if ($updated) {
+                $_SESSION['user']['name'] = $name;
+                $_SESSION['message'] = "Profile updated successfully!";
+                header("Location: {$this->baseUrl}?action=profile");
+                exit;
+            } else {
+                $message = "Failed to update profile.";
+            }
+        }
+
+        require_once(__DIR__ . '/../Views/profile.php');
+    }
+
+    // ---------------- FORGOT PASSWORD ----------------
+    public function forgotPassword()
+    {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $email = trim($_POST['email'] ?? '');
+
+            if (empty($email)) {
+                $message = "Please enter your email address.";
+                require_once(__DIR__ . '/../Views/forgotpassword.php');
+                return;
+            }
+
+            $token = $this->user->setResetToken($email);
+            if ($token) {
+                $resetLink = "{$this->baseUrl}?action=resetpassword&token=$token";
+                $this->sendEmail(
+                    $email,
+                    "Password Reset Request - FundiFix",
+                    "Hello,<br><br>You requested a password reset. Click the link below to reset your password:<br><br>
+                    <a href='$resetLink'>Reset Password</a><br><br>
+                    This link will expire in 1 hour."
+                );
+                $message = "Password reset link sent to your email.";
+            } else {
+                $message = "Email not found in our system.";
+            }
+        }
+
+        require_once(__DIR__ . '/../Views/forgotpassword.php');
+    }
+
+    // ---------------- RESET PASSWORD ----------------
+    public function resetPassword()
+    {
+        $token = $_GET['token'] ?? ($_POST['token'] ?? '');
+
+        if (empty($token)) {
+            header("Location: {$this->baseUrl}?action=forgotpassword");
+            exit;
+        }
 
         $user = $this->user->findByResetToken($token);
         if (!$user) {
-            header("Location: ?action=login");
-            exit;
-        }
-
-        if (strlen($new_password) < 8 || $new_password !== $confirm_password) {
-            $message = "Passwords do not match or are too short. Please try again.";
-            require dirname(__DIR__) . '/Views/resetpassword.php';
+            $message = "Invalid or expired reset token.";
+            require_once(__DIR__ . '/../Views/resetpassword.php');
             return;
         }
 
-        $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
-        if ($this->user->updatePasswordByToken($token, $hashed_password)) {
-            $_SESSION['message'] = "Your password has been reset successfully. Please log in.";
-            header("Location: ?action=login");
-            exit;
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $new_password = $_POST['new_password'] ?? '';
+            $confirm_password = $_POST['confirm_password'] ?? '';
+
+            if ($new_password !== $confirm_password) {
+                $message = "Passwords do not match.";
+            } elseif (strlen($new_password) < 8) {
+                $message = "Password must be at least 8 characters long.";
+            } else {
+                $hash = password_hash($new_password, PASSWORD_DEFAULT);
+                $updated = $this->user->updatePasswordByToken($token, $hash);
+
+                if ($updated) {
+                    $_SESSION['message'] = "Password reset successfully!";
+                    header("Location: {$this->baseUrl}?action=login");
+                    exit;
+                } else {
+                    $message = "Failed to reset password.";
+                }
+            }
         }
+
+        require_once(__DIR__ . '/../Views/resetpassword.php');
     }
 
-    // ---------------------------------------------------------------------
-    // EMAIL HELPERS
-    // ---------------------------------------------------------------------
-    private function sendVerificationEmail(string $email, string $name, string $code): bool
+    // ---------------- EMAIL ----------------
+    public function sendEmail($to, $subject, $body)
     {
         $mail = new PHPMailer(true);
         try {
             $mail->isSMTP();
-            $mail->Host       = $_ENV['MAIL_HOST'];
-            $mail->SMTPAuth   = true;
-            $mail->Username   = $_ENV['MAIL_USER'];
-            $mail->Password   = $_ENV['MAIL_PASS'];
+            $mail->Host = $_ENV['MAIL_HOST'] ?? 'smtp.gmail.com';
+            $mail->SMTPAuth = true;
+            $mail->Username = $_ENV['MAIL_USER'] ?? '';
+            $mail->Password = $_ENV['MAIL_PASS'] ?? '';
             $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port       = 587;
+            $mail->Port = $_ENV['MAIL_PORT'] ?? 587;
 
-            $mail->setFrom($_ENV['MAIL_USER'], $_ENV['MAIL_FROM_NAME']);
-            $mail->addAddress($email, $name);
+            $mail->setFrom($_ENV['MAIL_USER'], $_ENV['MAIL_FROM_NAME'] ?? 'FundiFix');
+            $mail->addAddress($to);
             $mail->isHTML(true);
-            $mail->Subject = 'FundiFix - Verify Your Account';
-            $mail->Body    = "Hello {$name},<br><br>Your verification code is <b>{$code}</b>.";
-            $mail->AltBody = "Your verification code is: {$code}";
+            $mail->Subject = $subject;
+            $mail->Body = $body;
 
-            $mail->send();
-            return true;
-        } catch (Exception $e) {
-            return false;
-        }
-    }
-
-    private function send2FACode(string $email, int $code): bool
-    {
-        $mail = new PHPMailer(true);
-        try {
-            $mail->isSMTP();
-            $mail->Host       = $_ENV['MAIL_HOST'];
-            $mail->SMTPAuth   = true;
-            $mail->Username   = $_ENV['MAIL_USER'];
-            $mail->Password   = $_ENV['MAIL_PASS'];
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port       = 587;
-
-            $mail->setFrom($_ENV['MAIL_USER'], $_ENV['MAIL_FROM_NAME']);
-            $mail->addAddress($email);
-            $mail->isHTML(true);
-            $mail->Subject = 'Your FundiFix 2FA Code';
-            $mail->Body    = 'Your login verification code is: <b>' . $code . '</b>';
-            $mail->AltBody = 'Your login verification code is: ' . $code;
-
-            $mail->send();
-            return true;
-        } catch (Exception $e) {
-            return false;
-        }
-    }
-
-    private function sendPasswordResetEmail(string $email, string $token): bool
-    {
-        $mail = new PHPMailer(true);
-        $reset_link = "http://" . $_SERVER['HTTP_HOST'] . "/FundiFix-Project/Public/?action=resetPassword&token=" . urlencode($token);
-
-        try {
-            $mail->isSMTP();
-            $mail->Host       = $_ENV['MAIL_HOST'];
-            $mail->SMTPAuth   = true;
-            $mail->Username   = $_ENV['MAIL_USER'];
-            $mail->Password   = $_ENV['MAIL_PASS'];
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port       = 587;
-
-            $mail->setFrom($_ENV['MAIL_USER'], $_ENV['MAIL_FROM_NAME']);
-            $mail->addAddress($email);
-            $mail->isHTML(true);
-            $mail->Subject = 'FundiFix Password Reset';
-            $mail->Body    = 'Click this link to reset your password: <a href="' . $reset_link . '">' . $reset_link . '</a>';
-            $mail->AltBody = 'Reset your password using this link: ' . $reset_link;
-
-            $mail->send();
-            return true;
-        } catch (Exception $e) {
+            return $mail->send();
+        } catch (\Exception $e) {
+            error_log("Mail error: " . $e->getMessage());
             return false;
         }
     }

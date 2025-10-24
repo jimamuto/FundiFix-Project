@@ -50,7 +50,6 @@ dropTable($conn, 'fundi_profiles');
 dropTable($conn, 'services');
 dropTable($conn, 'users');
 
-// ------------------------- USERS -------------------------
 createTable($conn, 'users', [
   'id' => 'INT(11) AUTO_INCREMENT PRIMARY KEY',
   'name' => 'VARCHAR(255) NOT NULL',
@@ -61,10 +60,10 @@ createTable($conn, 'users', [
   'is_verified' => 'TINYINT(1) DEFAULT 0',
   'created_at' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
   'password_reset_token' => 'VARCHAR(255) DEFAULT NULL',
-  'password_reset_expires_at' => 'DATETIME DEFAULT NULL'
+  'password_reset_expires_at' => 'DATETIME DEFAULT NULL',
+  'twofa_code' => 'VARCHAR(6) DEFAULT NULL',
+  'twofa_created_at' => 'DATETIME DEFAULT NULL'
 ]);
-
-
 
 // ------------------------- FUNDI PROFILES -------------------------
 createTable($conn, 'fundi_profiles', [

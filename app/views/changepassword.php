@@ -1,7 +1,7 @@
 <?php
 // If the user is not logged in, they are immediately redirected to the login page.
 if (!isset($_SESSION['user_id'])) {
-    header("Location: /FundiApp/public/?action=login");
+    header("Location: http://localhost/FundiFix-Project/public/index.php?action=login");
     exit();
 }
 

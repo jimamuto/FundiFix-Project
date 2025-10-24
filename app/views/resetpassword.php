@@ -11,12 +11,15 @@
                     </div>
 
                     <?php if (!empty($message)): ?>
-                        <div class="alert alert-danger"><?php echo $message; ?></div>
+                        <div class="alert alert-<?php echo isset($success) && $success ? 'success' : 'danger'; ?>">
+                            <?php echo $message; ?>
+                        </div>
                     <?php endif; ?>
 
-                    <form action="?action=updatePasswordFromReset" method="POST" onsubmit="return validatePasswords();">
+                    <!-- FIXED: Changed action from updatePasswordFromReset to resetpassword -->
+                    <form action="?action=resetpassword" method="POST" onsubmit="return validatePasswords();">
                         <!-- Hidden input to carry the token -->
-                        <input type="hidden" name="token" value="<?php echo htmlspecialchars($token); ?>">
+                        <input type="hidden" name="token" value="<?php echo htmlspecialchars($token ?? ''); ?>">
 
                         <div class="form-floating mb-3">
                             <input type="password" class="form-control" id="new_password" name="new_password" placeholder="New Password" required minlength="8">
@@ -29,6 +32,11 @@
                         </div>
                         <button type="submit" class="btn btn-primary w-100 btn-lg">Reset Password</button>
                     </form>
+                    
+                    <div class="text-center mt-3">
+                        <a href="?action=login">Back to Login</a>
+                    </div>
+                    
                     <script>
                     function validatePasswords() {
                         var pw1 = document.getElementById('new_password').value;
