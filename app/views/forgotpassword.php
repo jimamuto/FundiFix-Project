@@ -16,21 +16,33 @@ require_once 'layouts/header.php';
                     </div>
 
                     <?php
-                    // Display any feedback messages from the controller.
+                    // Display any feedback messages
                     if (isset($_SESSION['message'])) {
-                        echo '<div class="alert alert-info d-flex align-items-center"><i class="bi bi-info-circle-fill me-2"></i>' . $_SESSION['message'] . '</div>';
-                        unset($_SESSION['message']); // Clear the message after displaying it.
+                        echo '<div class="alert alert-success d-flex align-items-center"><i class="bi bi-check-circle-fill me-2"></i>' . $_SESSION['message'] . '</div>';
+                        unset($_SESSION['message']);
+                    }
+                    
+                    // Display error messages from the controller
+                    if (!empty($message)) {
+                        echo '<div class="alert alert-danger d-flex align-items-center"><i class="bi bi-exclamation-triangle-fill me-2"></i>' . $message . '</div>';
+                    }
+                    
+                    // Display success message
+                    if (isset($success) && $success && !empty($message)) {
+                        echo '<div class="alert alert-success d-flex align-items-center"><i class="bi bi-check-circle-fill me-2"></i>' . $message . '</div>';
                     }
                     ?>
 
-                    <!-- The form posts the email to the 'sendResetLink' action. -->
-                    <form action="?action=sendResetLink" method="POST" onsubmit="return validateEmail();">
+                    <!-- CHANGED: Form action from sendResetLink to forgotpassword -->
+                    <form action="?action=forgotpassword" method="POST" onsubmit="return validateEmail();">
                         <div class="form-floating mb-3">
-                            <input type="email" class="form-control" id="email" name="email" placeholder="name@example.com" required>
+                            <input type="email" class="form-control" id="email" name="email" placeholder="name@example.com" required 
+                                   value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>">
                             <label for="email">Email address</label>
                         </div>
                         <button type="submit" class="btn btn-primary w-100 btn-lg">Send Reset Link</button>
                     </form>
+                    
                     <script>
                     function validateEmail() {
                         var email = document.getElementById('email').value;

@@ -35,7 +35,7 @@
       <div class="col-md-4 col-lg-3 col-xl-3 mx-auto mb-md-0 mb-4">
         <h6 class="text-uppercase fw-bold mb-3">Contact</h6>
         <p><i class="bi bi-house-door-fill me-2"></i> Nairobi, Kenya</p>
-        <p><i class="bi bi-envelope-fill me-2"></i> FundiApp@yahoo.com</p>
+        <p><i class="bi bi-envelope-fill me-2"></i> FundiFix@yahoo.com</p>
         <p><i class="bi bi-phone-fill me-2"></i> +254 712 345 678</p>
       </div>
     </div>
@@ -48,7 +48,7 @@
     <a href="#" class="text-light me-3"><i class="bi bi-instagram"></i></a>
     <a href="#" class="text-light"><i class="bi bi-linkedin"></i></a>
     <hr class="bg-light my-4">
-    <p class="mb-0">&copy; 2025 FundiApp. All Rights Reserved.</p>
+    <p class="mb-0">&copy; 2025 FundiFix. All Rights Reserved.</p>
   </div>
 </footer>
 

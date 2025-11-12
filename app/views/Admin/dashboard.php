@@ -24,6 +24,8 @@
     </style>
 </head>
 <body>
+
+
     <div class="container-fluid">
         <div class="row">
             <!-- Sidebar -->
@@ -44,7 +46,7 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="?action=admin_services">
+                            <a class="nav-link" href="index.php?action=admin_services">
                                 <i class="fas fa-tools me-2"></i>
                                 Manage Services
                             </a>

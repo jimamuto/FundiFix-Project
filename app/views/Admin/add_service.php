@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Add Service - FundiFix Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
     <div class="container-fluid">
@@ -41,9 +42,15 @@
                     <a href="?action=admin_services" class="btn btn-secondary">Back to Services</a>
                 </div>
 
+                <!-- Flash Messages -->
+                <?php if (isset($_SESSION['error'])): ?>
+                    <div class="alert alert-danger"><?= $_SESSION['error']; unset($_SESSION['error']); ?></div>
+                <?php endif; ?>
+
                 <div class="card">
                     <div class="card-body">
-                        <form method="POST" action="?action=create_service">
+                      
+                        <form method="POST" action="?action=add_service">
                             <div class="mb-3">
                                 <label for="name" class="form-label">Service Name</label>
                                 <input type="text" class="form-control" id="name" name="name" placeholder="e.g., Plumbing, Electrical, Carpentry" required>
@@ -51,7 +58,7 @@
 
                             <div class="mb-3">
                                 <label for="description" class="form-label">Description</label>
-                                <textarea class="form-control" id="description" name="description" rows="3" placeholder="Describe the service..." required></textarea>
+                                <textarea class="form-control" id="description" name="description" rows="3" placeholder="Describe the service..."></textarea>
                             </div>
 
                             <div class="mb-3">
@@ -75,5 +82,7 @@
             </main>
         </div>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

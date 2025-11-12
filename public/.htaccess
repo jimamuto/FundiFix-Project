@@ -1,9 +1,8 @@
-
 # Enable the rewrite engine
 RewriteEngine On
 
-# Set the base path for the application
-RewriteBase /FundiApp/public/
+# Set the base path for the application 
+RewriteBase /FundiFix-Project/public/
 
 # Redirect all requests to index.php if the file or directory doesn't exist.
 # This allows for clean URLs to be handled by the PHP router.

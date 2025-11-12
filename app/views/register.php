@@ -1,5 +1,5 @@
 <?php
-// This view requires the header file to be included at the top.
+
 require_once 'layouts/header.php';
 ?>
 
@@ -26,7 +26,6 @@ require_once 'layouts/header.php';
                     <!-- The form submits its data to the router with the 'register' action. -->
                     <form action="?action=register" method="POST" onsubmit="return validateRegisterForm();">
                         
-                        
                         <div class="form-floating mb-3">
                             <input type="text" class="form-control" id="name" name="name" placeholder="John Doe" required>
                             <label for="name">Full Name</label>
@@ -41,6 +40,11 @@ require_once 'layouts/header.php';
                             <input type="password" class="form-control" id="password" name="password" placeholder="Password" required minlength="8">
                             <label for="password">Password</label>
                             <div class="form-text">Must be at least 8 characters long.</div>
+                        </div>
+
+                        <div class="form-floating mb-3">
+                            <input type="password" class="form-control" id="confirm_password" name="confirm_password" placeholder="Confirm Password" required minlength="8">
+                            <label for="confirm_password">Confirm Password</label>
                         </div>
 
                         <!-- Role Selection Dropdown -->
@@ -64,11 +68,14 @@ require_once 'layouts/header.php';
 
                         <button type="submit" class="btn btn-primary w-100 btn-lg">Create Account</button>
                     </form>
+                    
                     <script>
                     function validateRegisterForm() {
                         var email = document.getElementById('email').value;
                         var pw = document.getElementById('password').value;
+                        var confirmPw = document.getElementById('confirm_password').value;
                         var re = /^(([^<>()\[\]\\.,;:\s@\"]+(\.[^<>()\[\]\\.,;:\s@\"]+)*)|(".+"))@(([^<>()[\]\\.,;:\s@\"]+\.)+[^<>()[\]\\.,;:\s@\"]{2,})$/i;
+                        
                         if (!re.test(email)) {
                             alert('Please enter a valid email address.');
                             return false;
@@ -77,8 +84,13 @@ require_once 'layouts/header.php';
                             alert('Password must be at least 8 characters long.');
                             return false;
                         }
+                        if (pw !== confirmPw) {
+                            alert('Passwords do not match.');
+                            return false;
+                        }
                         return true;
                     }
+                    
                     function toggle2FAMessage() {
                         var cb = document.getElementById('enable_2fa');
                         var msg = document.getElementById('2fa_message');

@@ -49,17 +49,21 @@ dropTable($conn, 'bookings');
 dropTable($conn, 'fundi_profiles');
 dropTable($conn, 'services');
 dropTable($conn, 'users');
+dropTable($conn, 'inventory');
 
-// ------------------------- USERS -------------------------
 createTable($conn, 'users', [
   'id' => 'INT(11) AUTO_INCREMENT PRIMARY KEY',
   'name' => 'VARCHAR(255) NOT NULL',
   'email' => 'VARCHAR(255) NOT NULL UNIQUE',
   'password' => 'VARCHAR(255) NOT NULL',
-  "role" => "ENUM('resident','fundi') NOT NULL",
+  "role" => "ENUM('resident','fundi','admin') NOT NULL DEFAULT 'resident'",
+  'verification_code' => 'VARCHAR(10) DEFAULT NULL',
+  'is_verified' => 'TINYINT(1) DEFAULT 0',
   'created_at' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
   'password_reset_token' => 'VARCHAR(255) DEFAULT NULL',
-  'password_reset_expires_at' => 'DATETIME DEFAULT NULL'
+  'password_reset_expires_at' => 'DATETIME DEFAULT NULL',
+  'twofa_code' => 'VARCHAR(6) DEFAULT NULL',
+  'twofa_created_at' => 'DATETIME DEFAULT NULL'
 ]);
 
 // ------------------------- FUNDI PROFILES -------------------------
@@ -72,11 +76,14 @@ createTable($conn, 'fundi_profiles', [
   'updated_at' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'
 ]);
 
-// ------------------------- SERVICES -------------------------
 createTable($conn, 'services', [
   'id' => 'INT(11) AUTO_INCREMENT PRIMARY KEY',
   'name' => 'VARCHAR(100) NOT NULL UNIQUE',
-  'description' => 'TEXT DEFAULT NULL'
+  'category' => 'VARCHAR(100) NOT NULL', 
+  'description' => 'TEXT DEFAULT NULL', 
+  'price' => 'DECIMAL(10,2) NOT NULL DEFAULT 0.00',
+  "status" => "ENUM('active','inactive') NOT NULL DEFAULT 'active'",
+  'created_at' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP'
 ]);
 
 // ------------------------- FUNDI SERVICES -------------------------
@@ -86,10 +93,13 @@ createTable($conn, 'fundi_services', [
 ], "PRIMARY KEY (fundi_profile_id, service_id)");
 
 // ------------------------- BOOKINGS -------------------------
+
 createTable($conn, 'bookings', [
   'id' => 'INT(11) AUTO_INCREMENT PRIMARY KEY',
   'resident_id' => 'INT(11) NOT NULL',
   'fundi_id' => 'INT(11) NOT NULL',
+  'service_id' => 'INT(11) NOT NULL',
+  'amount' => 'DECIMAL(10,2) DEFAULT 0.00', 
   "status" => "ENUM('pending','accepted','completed','cancelled') NOT NULL DEFAULT 'pending'",
   'created_at' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP'
 ]);
@@ -115,6 +125,20 @@ createTable($conn, 'payments', [
   'payment_method' => 'VARCHAR(50) DEFAULT NULL',
   'created_at' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
   'updated_at' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'
+]);
+
+// ------------------------- INVENTORY -------------------------
+createTable($conn, 'inventory', [
+    'id' => 'INT(11) AUTO_INCREMENT PRIMARY KEY',
+    'fundi_id' => 'INT(11) NOT NULL',
+    'item_name' => 'VARCHAR(255) NOT NULL',
+    'category' => 'VARCHAR(100) NOT NULL',
+    'quantity' => 'INT(11) NOT NULL DEFAULT 0',
+    'unit_price' => 'DECIMAL(10,2) DEFAULT 0.00',
+    'description' => 'TEXT DEFAULT NULL',
+    'status' => "ENUM('available','low_stock','out_of_stock') DEFAULT 'available'",
+    'created_at' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
+    'updated_at' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'
 ]);
 
 echo "<br><strong> All migrations executed successfully.</strong>";

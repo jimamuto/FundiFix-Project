@@ -17,72 +17,35 @@
     <!-- Simple Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
-            <!-- Brand Logo -->
-            <a class="navbar-brand fw-bold" href="http://localhost/FundiFix-Project/public/index.php">
-                FundiFix
-            </a>
+            <!-- ABSOLUTE PATH for all links -->
+            <?php if (isset($_SESSION['user']) && !isset($_SESSION['2fa_user']) && !isset($_SESSION['verify_email'])): ?>
+                <!-- For logged-in users: FundiFix goes to dashboard -->
+                <a class="navbar-brand fw-bold" href="http://localhost/FundiFix-Project/public/index.php?action=dashboard">FundiFix</a>
+            <?php else: ?>
+                <!-- For logged-out users: FundiFix goes to home page -->
+                <a class="navbar-brand fw-bold" href="http://localhost/FundiFix-Project/public/index.php?action=home">FundiFix</a>
+            <?php endif; ?>
             
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
-                    <?php if (isset($_SESSION['user'])): ?>
-                        <!-- Simple logged-in menu -->
-                        <li class="nav-item">
-                            <a class="nav-link" href="http://localhost/FundiFix-Project/public/index.php?action=dashboard">
-                                Dashboard
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="http://localhost/FundiFix-Project/public/index.php?action=profile">
-                                Profile
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="http://localhost/FundiFix-Project/public/index.php?action=logout">
-                                Logout (<?php echo htmlspecialchars($_SESSION['user']['name']); ?>)
-                            </a>
-                        </li>
+                    <?php if (isset($_SESSION['user']) && !isset($_SESSION['2fa_user']) && !isset($_SESSION['verify_email'])): ?>
+                        <!-- For logged-in users: Home goes to dashboard -->
+                        <li class="nav-item"><a class="nav-link" href="http://localhost/FundiFix-Project/public/index.php?action=dashboard">Home</a></li>
+                        <li class="nav-item"><a class="nav-link" href="http://localhost/FundiFix-Project/public/index.php?action=dashboard">Dashboard</a></li>
+                        <li class="nav-item"><a class="nav-link" href="http://localhost/FundiFix-Project/public/index.php?action=profile">Profile</a></li>
+                        <li class="nav-item"><a class="nav-link" href="http://localhost/FundiFix-Project/public/index.php?action=logout">Logout</a></li>
                     <?php else: ?>
-                        <!-- Guest menu -->
-                        <li class="nav-item">
-                            <a class="nav-link" href="http://localhost/FundiFix-Project/public/index.php?action=home">
-                                Home
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="http://localhost/FundiFix-Project/public/index.php?action=login">
-                                Login
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="http://localhost/FundiFix-Project/public/index.php?action=register">
-                                Register
-                            </a>
-                        </li>
+                        <!-- For logged-out users: Home goes to home page -->
+                        <li class="nav-item"><a class="nav-link" href="http://localhost/FundiFix-Project/public/index.php?action=home">Home</a></li>
+                        <li class="nav-item"><a class="nav-link" href="http://localhost/FundiFix-Project/public/index.php?action=login">Login</a></li>
+                        <li class="nav-item"><a class="nav-link" href="http://localhost/FundiFix-Project/public/index.php?action=register">Register</a></li>
                     <?php endif; ?>
                 </ul>
             </div>
         </div>
     </nav>
-
-    <!-- Display Messages -->
-    <?php if (isset($_SESSION['success'])): ?>
-        <div class="alert alert-success alert-dismissible fade show m-3" role="alert">
-            <?php echo $_SESSION['success']; ?>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-        <?php unset($_SESSION['success']); ?>
-    <?php endif; ?>
-
-    <?php if (isset($_SESSION['error'])): ?>
-        <div class="alert alert-danger alert-dismissible fade show m-3" role="alert">
-            <?php echo $_SESSION['error']; ?>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-        <?php unset($_SESSION['error']); ?>
-    <?php endif; ?>
-</body>
-</html>
