@@ -56,3 +56,6 @@ run this command php test_connection
 to test if the user has been registered
 run this command php test_user.php
 
+in order to  export reports 
+composer require phpoffice/phpspreadsheet
+composer require tecnickcom/tcpdf
