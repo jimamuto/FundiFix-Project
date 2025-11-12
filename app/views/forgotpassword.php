@@ -24,13 +24,24 @@ require_once 'layouts/header.php';
                     ?>
 
                     <!-- The form posts the email to the 'sendResetLink' action. -->
-                    <form action="?action=sendResetLink" method="POST">
+                    <form action="?action=sendResetLink" method="POST" onsubmit="return validateEmail();">
                         <div class="form-floating mb-3">
                             <input type="email" class="form-control" id="email" name="email" placeholder="name@example.com" required>
                             <label for="email">Email address</label>
                         </div>
                         <button type="submit" class="btn btn-primary w-100 btn-lg">Send Reset Link</button>
                     </form>
+                    <script>
+                    function validateEmail() {
+                        var email = document.getElementById('email').value;
+                        var re = /^(([^<>()\[\]\\.,;:\s@\"]+(\.[^<>()\[\]\\.,;:\s@\"]+)*)|(".+"))@(([^<>()[\]\\.,;:\s@\"]+\.)+[^<>()[\]\\.,;:\s@\"]{2,})$/i;
+                        if (!re.test(email)) {
+                            alert('Please enter a valid email address.');
+                            return false;
+                        }
+                        return true;
+                    }
+                    </script>
 
                     <div class="text-center mt-3">
                         <a href="?action=login">Back to Login</a>
